@@ -1,3 +1,9 @@
+## [1.0.0-dev.2](https://github.com/jkubaa/tideglass-patches/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-11-25)
+
+### 🐛 Bug Fixes
+
+* Update Frosted pill navigation bar description ([cf38ec5](https://github.com/jkubaa/tideglass-patches/commit/cf38ec5cc33b56635c4215ea1932a37ab1e0c492))
+
 ## 1.0.0-dev.1 (2026-11-25)
 
 ### ✨ New Features
