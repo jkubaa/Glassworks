@@ -16,7 +16,7 @@ private const val WRAP_MODIFIER = "($MODIFIER)$MODIFIER"
 @Suppress("unused")
 val frostedPillNavigationBarPatch = bytecodePatch(
     name = "Frosted pill navigation bar",
-    description = "Splits the bottom bar into an iOS-style frosted-glass pill for the mini player " +
+    description = "Splits the bottom bar into a frosted-glass pill for the mini player " +
         "and another for the tabs, with the screen content blurred behind them. " +
         "Adjust it or switch back to the original bar in Settings > Tideglass.",
     default = true,
