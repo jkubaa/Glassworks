@@ -1,18 +1,20 @@
-# 👋🧩 Morphe Patches template
+# 🧊🧩 Tideglass Patches
 
-Template repository for Morphe Patches.
+Unofficial Morphe patches for the TIDAL Android app.
 
 ## ❓ About
 
-Patches for apps I like.
+Tideglass patches change how TIDAL looks and feels. The first patch replaces the bottom
+navigation bar with a floating, pill-shaped bar on a frosted-glass background.
 
-<!-- TODO: Update this about section with a brief introduction/summary about this repo and what it offers. -->
+Tideglass is not affiliated with TIDAL or with the Morphe project. These patches do not
+unlock paid features or bypass DRM.
 
 ### How to use these patches
 
-Click the button below, or manually add this repo url to Morphe Manager: https://github.com/xyz-user/xyz-patches
+Click the button below, or manually add this repo url to Morphe Manager: https://github.com/jkubaa/tideglass-patches
 
-<a href="https://morphe.software/add-source?github=xyz-user/xyz-patches">
+<a href="https://morphe.software/add-source?github=jkubaa/tideglass-patches">
   <img src=".github/assets/add-to-morphe.svg" alt="Add to Morphe" height="48">
 </a>
 

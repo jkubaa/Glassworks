@@ -10,17 +10,16 @@ plugins {
     alias(libs.plugins.animalsniffer)
 }
 
-group = "app.template"
+group = "app.tideglass"
 
 patches {
-    // TODO: Update this section with your project details.
     about {
-        name = "UserXYZ Patches"
-        description = "Patches for apps I like"
-        source = "git@github.com:UserXYZ/morphe-patches.git"
-        author = "Awesome dev"
-        contact = "na"
-        website = "na"
+        name = "Tideglass Patches"
+        description = "Unofficial Morphe patches for TIDAL: a floating, frosted-glass pill navigation bar and more"
+        source = "git@github.com:jkubaa/tideglass-patches.git"
+        author = "jkubaa"
+        contact = "https://github.com/jkubaa/tideglass-patches/issues"
+        website = "https://github.com/jkubaa/tideglass-patches"
         license = "GPLv3"
     }
 }
