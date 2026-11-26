@@ -54,7 +54,8 @@ final class GlassPainter {
 
     /**
      * Bends the content within {@code band} pixels of the shape's edge outward, so content just
-     * outside the glass shows near its rim, as through a thick lens.
+     * outside the glass shows near its rim, as through a thick lens. The middle is slightly
+     * magnified ({@code zoom}), which keeps the lens visible even through a strong blur.
      */
     private static final String LENS_SHADER =
             "uniform shader content;\n"
@@ -63,6 +64,7 @@ final class GlassPainter {
                     + "uniform float radius;\n"
                     + "uniform float band;\n"
                     + "uniform float strength;\n"
+                    + "uniform float zoom;\n"
                     + "float sdf(float2 p) {\n"
                     + "  float2 c = size * 0.5;\n"
                     + "  float2 q = abs(p - c) - (c - radius);\n"
@@ -71,12 +73,15 @@ final class GlassPainter {
                     + "half4 main(float2 coord) {\n"
                     + "  float2 p = coord - margin;\n"
                     + "  float d = sdf(p);\n"
-                    + "  if (d > 0.0 || d < -band) { return content.eval(coord); }\n"
+                    + "  if (d > 0.0) { return content.eval(coord); }\n"
+                    + "  float2 c = size * 0.5;\n"
+                    + "  float2 src = c + (p - c) * (1.0 - zoom) + margin;\n"
+                    + "  if (d < -band) { return content.eval(src); }\n"
                     + "  float2 e = float2(1.0, 0.0);\n"
                     + "  float2 n = float2(sdf(p + e.xy) - sdf(p - e.xy), sdf(p + e.yx) - sdf(p - e.yx));\n"
                     + "  n = n / max(length(n), 0.0001);\n"
                     + "  float t = 1.0 + d / band;\n"
-                    + "  return content.eval(coord + n * strength * t * t * t);\n"
+                    + "  return content.eval(src + n * strength * t * t);\n"
                     + "}\n";
 
     private final float density;
@@ -197,8 +202,8 @@ final class GlassPainter {
 
         float width = shape.width();
         float height = shape.height();
-        float strength = Math.min(10f * density, height * 0.2f);
-        float band = Math.min(height * 0.4f, 22f * density);
+        float strength = Math.min(22f * density, height * 0.4f);
+        float band = Math.min(height * 0.5f, 30f * density);
         float margin = (float) Math.ceil(strength + 2f);
 
         int nodeWidth = (int) Math.ceil(width + 2 * margin);
@@ -217,6 +222,7 @@ final class GlassPainter {
         lensShader.setFloatUniform("radius", shape.radius);
         lensShader.setFloatUniform("band", band);
         lensShader.setFloatUniform("strength", strength);
+        lensShader.setFloatUniform("zoom", 0.06f);
         lens.setRenderEffect(RenderEffect.createRuntimeShaderEffect(lensShader, "content"));
 
         int save = canvas.save();

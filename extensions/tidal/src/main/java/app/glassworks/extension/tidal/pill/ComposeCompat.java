@@ -22,6 +22,7 @@ final class ComposeCompat {
 
     private static final String BACKGROUND_KT = "androidx.compose.foundation.BackgroundKt";
     private static final String PADDING_KT = "androidx.compose.foundation.layout.PaddingKt";
+    private static final String OFFSET_KT = "androidx.compose.foundation.layout.OffsetKt";
     private static final String SIZE_KT = "androidx.compose.foundation.layout.SizeKt";
     private static final String SHAPE_KT = "androidx.compose.foundation.shape.RoundedCornerShapeKt";
 
@@ -61,6 +62,12 @@ final class ComposeCompat {
         Method method = find(PADDING_KT, "padding-qDBjuR0$default", Modifier.class,
                 float.class, float.class, float.class, float.class, int.class, Object.class);
         return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp, 0, null);
+    }
+
+    /** {@code modifier.offset(xDp.dp, yDp.dp)}: moves the content without changing the layout. */
+    static Modifier offset(Modifier modifier, float xDp, float yDp) {
+        Method method = find(OFFSET_KT, "offset-VpY3zN4", Modifier.class, float.class, float.class);
+        return invoke(method, modifier, modifier, xDp, yDp);
     }
 
     /** {@code modifier.width(widthDp.dp)}. */

@@ -30,6 +30,10 @@ public final class ArtworkTint {
     private static volatile int fromRgb = FALLBACK_RGB;
     private static volatile int toRgb = FALLBACK_RGB;
     private static volatile long fadeStart;
+    /** Whether the color saved by the last run was loaded. */
+    private static volatile boolean loaded;
+    /** The last picked color, so the tint is right after a restart, before the track changes. */
+    private static final String KEY_LAST_RGB = "artwork_tint_rgb";
 
     private static volatile Bitmap latestArtwork;
     private static Bitmap pickedArtwork;
@@ -73,6 +77,7 @@ public final class ArtworkTint {
 
     /** The tint to draw now, part way through a fade if one is running. */
     static int currentRgb() {
+        loadSaved();
         float fraction = fadeFraction();
         return fraction >= 1f ? toRgb : blend(fromRgb, toRgb, fraction);
     }
@@ -87,9 +92,26 @@ public final class ArtworkTint {
         return Math.min(1f, Math.max(0f, elapsed / (float) FADE_MS));
     }
 
+    private static void loadSaved() {
+        if (loaded || GlassworksSettings.getPreferences() == null) {
+            return;
+        }
+        loaded = true;
+        int saved = GlassworksSettings.getInt(KEY_LAST_RGB, FALLBACK_RGB);
+        if (fadeStart == 0) {
+            fromRgb = saved;
+            toRgb = saved;
+        }
+    }
+
     private static synchronized void setColor(int rgb) {
+        loadSaved();
         if (rgb == toRgb) {
             return;
+        }
+        android.content.SharedPreferences prefs = GlassworksSettings.getPreferences();
+        if (prefs != null) {
+            prefs.edit().putInt(KEY_LAST_RGB, rgb).apply();
         }
         fromRgb = currentRgb();
         toRgb = rgb;

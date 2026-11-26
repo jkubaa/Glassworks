@@ -26,6 +26,13 @@ import app.glassworks.extension.tidal.settings.GlassworksSettings;
 @SuppressWarnings("unused")
 public final class FrostedPillPatch {
 
+    /**
+     * TIDAL's mini player row has 12dp padding above and 8dp below, which looked even on the
+     * shared card. In its own pill that sits 2dp low, so the content is moved up by half the
+     * difference.
+     */
+    private static final float MINI_PLAYER_CENTERING_DP = -2f;
+
     /** Corner radius of the one-pill card at 100% roundness, in dp (half the tab bar height). */
     private static final float CARD_MAX_RADIUS_DP = 28f;
 
@@ -61,7 +68,8 @@ public final class FrostedPillPatch {
         }
         int side = GlassworksSettings.getSideMarginDp();
         Modifier withGap = ComposeCompat.padding(modifier, side, 0f, side, GlassworksSettings.getPillGapDp());
-        return remember(withGap.then(FrostedPillElement.MINI_PLAYER));
+        Modifier pill = withGap.then(FrostedPillElement.MINI_PLAYER);
+        return remember(ComposeCompat.offset(pill, 0f, MINI_PLAYER_CENTERING_DP));
     }
 
     /**
