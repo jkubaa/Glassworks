@@ -11,7 +11,7 @@ public final class Features {
     private Features() {
     }
 
-    /** Replaced by the "Frosted pill navigation bar" patch. */
+    /** Replaced by the "Pill navigation bar" patch. */
     public static boolean navigationBar() {
         return false;
     }

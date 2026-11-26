@@ -26,12 +26,12 @@ private const val SHAPE = "Landroidx/compose/ui/graphics/Shape;"
 private const val WRAP_MODIFIER = "($MODIFIER)$MODIFIER"
 
 @Suppress("unused")
-val frostedPillNavigationBarPatch = bytecodePatch(
-    name = "Frosted pill navigation bar",
-    description = "Replaces the bottom bar with frosted-glass pills for the mini player and the tabs, " +
-        "with the screen content blurred behind them. Choose one or two pills, frosted or liquid glass, " +
-        "their shape, size and tint (including one from the album art), and hide, reorder or separate " +
-        "tabs in Settings > Glassworks.",
+val pillNavigationBarPatch = bytecodePatch(
+    name = "Pill navigation bar",
+    description = "Replaces the bottom bar with floating glass pills for the mini player and the tabs, " +
+        "with the screen content blurred behind them. Style them in Settings > Glassworks: frosted or " +
+        "liquid glass, one or two pills, their shape, size and tint (including one from the album art), " +
+        "a compact mini player, and hidden, reordered or separate tabs.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_TIDAL)
