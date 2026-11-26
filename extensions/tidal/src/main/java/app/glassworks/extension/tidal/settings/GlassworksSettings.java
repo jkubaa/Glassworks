@@ -22,7 +22,7 @@ public final class GlassworksSettings {
     public static final boolean DEFAULT_SINGLE_PILL = false;
     public static final int DEFAULT_PILL_GAP_DP = 10;
     public static final int DEFAULT_ROUNDNESS_PERCENT = 100;
-    public static final int DEFAULT_SIDE_MARGIN_DP = 0;
+    public static final int DEFAULT_SIDE_MARGIN_DP = 12;
     public static final int DEFAULT_LIFT_DP = 0;
     public static final int DEFAULT_TINT_COLOR = 0;
     public static final int DEFAULT_TINT_PERCENT = 55;
@@ -142,7 +142,10 @@ public final class GlassworksSettings {
         return clamp(getInt(KEY_ROUNDNESS_PERCENT, DEFAULT_ROUNDNESS_PERCENT), 0, 100);
     }
 
-    /** Extra space at the left and right of the bar, in dp. */
+    /**
+     * Extra space at the left and right of the bar, in dp, on top of TIDAL's 16dp screen margin.
+     * The default insets the bar from the content, so it reads as floating above it.
+     */
     public static int getSideMarginDp() {
         return clamp(getInt(KEY_SIDE_MARGIN_DP, DEFAULT_SIDE_MARGIN_DP), 0, MAX_SIDE_MARGIN_DP);
     }
