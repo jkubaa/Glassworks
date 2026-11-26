@@ -41,6 +41,12 @@ public final class FrostedPillPatch {
      */
     private static final float COMPACT_ROW_PADDING_DP = 4f;
 
+    /** TIDAL's padding of the mini player's title and artist column, in dp. */
+    private static final float TEXT_START_DP = 12f;
+    private static final float TEXT_END_DP = 16f;
+    /** End padding of that column with a frosted style, in dp. */
+    private static final float COMPACT_TEXT_END_DP = 4f;
+
     /** Corner radius of the one-pill card at 100% roundness, in dp (half the tab bar height). */
     private static final float CARD_MAX_RADIUS_DP = 28f;
 
@@ -231,6 +237,47 @@ public final class FrostedPillPatch {
         }
         ComposeCompat.circularProgressIndicator(modifier, color, strokeWidth, trackColor, strokeCap,
                 composer, changed, defaults);
+    }
+
+    /**
+     * Replaces {@code padding$default(start, top, end, bottom)} calls in the mini player row.
+     * The title and artist column has 12dp at the start and 16dp at the end; with a frosted style
+     * the end is 4dp, so the text runs closer to the play button, where its fade ends.
+     */
+    public static Modifier miniPlayerPaddingDefault(Modifier modifier, float start, float top, float end,
+                                                    float bottom, int defaults, Object unused) {
+        if (GlassworksSettings.isPillBarEnabled() && start == TEXT_START_DP && end == TEXT_END_DP) {
+            end = COMPACT_TEXT_END_DP;
+        }
+        // Unset arguments are 0 in TIDAL's calls, so passing all four gives the same result.
+        return ComposeCompat.paddingExact(modifier, start, top, end, bottom);
+    }
+
+    /** Replaces the mini player title's {@code basicMarquee()}, adding the edge fades. */
+    public static Modifier miniPlayerTitleMarquee(Modifier modifier, int iterations, int animationMode,
+                                                  int repeatDelay, int initialDelay, Object spacing,
+                                                  float velocity, int defaults, Object unused) {
+        return marquee(MarqueeFade.TITLE, modifier, iterations, animationMode, repeatDelay, initialDelay,
+                spacing, velocity, defaults, unused);
+    }
+
+    /** Replaces the mini player artist's {@code basicMarquee()}, adding the edge fades. */
+    public static Modifier miniPlayerSubtitleMarquee(Modifier modifier, int iterations, int animationMode,
+                                                     int repeatDelay, int initialDelay, Object spacing,
+                                                     float velocity, int defaults, Object unused) {
+        return marquee(MarqueeFade.SUBTITLE, modifier, iterations, animationMode, repeatDelay, initialDelay,
+                spacing, velocity, defaults, unused);
+    }
+
+    private static Modifier marquee(int line, Modifier modifier, int iterations, int animationMode,
+                                    int repeatDelay, int initialDelay, Object spacing, float velocity,
+                                    int defaults, Object unused) {
+        Modifier marquee = ComposeCompat.basicMarquee(modifier, iterations, animationMode, repeatDelay,
+                initialDelay, spacing, velocity, defaults, unused);
+        if (!GlassworksSettings.isPillBarEnabled() || marquee == modifier) {
+            return marquee;
+        }
+        return MarqueeFade.wrap(line, marquee);
     }
 
     private static boolean hidePlayButtonCircle() {

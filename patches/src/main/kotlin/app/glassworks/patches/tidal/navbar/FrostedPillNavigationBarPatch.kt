@@ -134,6 +134,39 @@ val frostedPillNavigationBarPatch = bytecodePatch(
                 method.redirectStaticCall(index, "$EXTENSION_CLASS->miniPlayerSize(${MODIFIER}F)$MODIFIER")
             }
 
+            // The title and artist column's padding (closer to the play button), and their
+            // marquees (edge fades while the text scrolls). The title's marquee comes first.
+            method.instructions.withIndex().filter { (_, instruction) ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) {
+                    return@filter false
+                }
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                reference.definingClass == "Landroidx/compose/foundation/layout/PaddingKt;" &&
+                    reference.name == "padding-qDBjuR0\$default"
+            }.forEach { (index, _) ->
+                method.redirectStaticCall(
+                    index,
+                    "$EXTENSION_CLASS->miniPlayerPaddingDefault(${MODIFIER}FFFFILjava/lang/Object;)$MODIFIER",
+                )
+            }
+            val marqueeCalls = method.instructions.withIndex().filter { (_, instruction) ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) {
+                    return@filter false
+                }
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                reference.definingClass == "Landroidx/compose/foundation/BasicMarqueeKt;" &&
+                    reference.name == "basicMarquee-1Mj1MLw\$default"
+            }.map { (index, _) -> index }
+            if (marqueeCalls.size != 2) {
+                throw PatchException("Expected 2 marquees in the MiniPlayer composable, found ${marqueeCalls.size}")
+            }
+            listOf("miniPlayerTitleMarquee", "miniPlayerSubtitleMarquee").zip(marqueeCalls).forEach { (hook, index) ->
+                method.redirectStaticCall(
+                    index,
+                    "$EXTENSION_CLASS->$hook(${MODIFIER}IIIILjava/lang/Object;FILjava/lang/Object;)$MODIFIER",
+                )
+            }
+
             // While buffering, TIDAL shows a spinner on a white circle instead of the play button.
             // Route the backgrounds (the artwork's and the circle's) and the spinner through the
             // extension, which drops the circle and makes the spinner white with the play button.

@@ -22,6 +22,8 @@ final class ComposeCompat {
 
     private static final String BACKGROUND_KT = "androidx.compose.foundation.BackgroundKt";
     private static final String PADDING_KT = "androidx.compose.foundation.layout.PaddingKt";
+    private static final String MARQUEE_KT = "androidx.compose.foundation.BasicMarqueeKt";
+    private static final String MARQUEE_SPACING = "androidx.compose.foundation.MarqueeSpacing";
     private static final String PROGRESS_KT = "androidx.compose.material3.ProgressIndicatorKt";
     private static final String COMPOSER = "androidx.compose.runtime.Composer";
     private static final String OFFSET_KT = "androidx.compose.foundation.layout.OffsetKt";
@@ -108,6 +110,24 @@ final class ComposeCompat {
         } catch (ReflectiveOperationException e) {
             Log.e(TAG, "Compose method failed: CircularProgressIndicator", e);
         }
+    }
+
+    /**
+     * {@code modifier.basicMarquee(...)} with TIDAL's original arguments (the synthetic
+     * {@code $default} method), or the modifier unchanged if the call fails.
+     */
+    static Modifier basicMarquee(Modifier modifier, int iterations, int animationMode, int repeatDelay,
+                                 int initialDelay, Object spacing, float velocity, int defaults, Object unused) {
+        Method method;
+        try {
+            method = find(MARQUEE_KT, "basicMarquee-1Mj1MLw$default", Modifier.class, int.class, int.class,
+                    int.class, int.class, Class.forName(MARQUEE_SPACING), float.class, int.class, Object.class);
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "MarqueeSpacing class not found", e);
+            return modifier;
+        }
+        return invoke(method, modifier, modifier, iterations, animationMode, repeatDelay, initialDelay,
+                spacing, velocity, defaults, unused);
     }
 
     /** {@code modifier.padding(start, top, end, bottom)} in dp, applied even when all are 0. */
