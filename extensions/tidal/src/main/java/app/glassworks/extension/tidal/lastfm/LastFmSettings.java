@@ -2,12 +2,15 @@ package app.glassworks.extension.tidal.lastfm;
 
 import android.content.SharedPreferences;
 
+import app.glassworks.extension.tidal.BuildConfig;
 import app.glassworks.extension.tidal.settings.GlassworksSettings;
 
 /**
  * Last.fm settings, stored with the other Glassworks settings.
  * <p>
- * The user's password is never stored: it is only sent once to Last.fm to get a session key.
+ * Requests use the built-in API account unless the user switches to their own key (or the build
+ * has none). Logging in through the browser never shows the password to Glassworks; the
+ * password login sends it once to Last.fm to get a session key and never stores it.
  */
 public final class LastFmSettings {
 
@@ -15,7 +18,8 @@ public final class LastFmSettings {
     public static final boolean DEFAULT_NOW_PLAYING = true;
     public static final boolean DEFAULT_MAIN_ARTIST_ONLY = true;
     public static final int DEFAULT_THRESHOLD_PERCENT = 50;
-    public static final int MIN_THRESHOLD_PERCENT = 25;
+    /** Last.fm's rule: a track counts once half of it played (or 4 minutes), never earlier. */
+    public static final int MIN_THRESHOLD_PERCENT = 50;
     public static final int MAX_THRESHOLD_PERCENT = 95;
 
     public static final String KEY_ENABLED = "lastfm_enabled";
@@ -24,6 +28,7 @@ public final class LastFmSettings {
     public static final String KEY_THRESHOLD_PERCENT = "lastfm_threshold_percent";
     public static final String KEY_API_KEY = "lastfm_api_key";
     public static final String KEY_API_SECRET = "lastfm_api_secret";
+    static final String KEY_USE_OWN_API_KEY = "lastfm_use_own_api_key";
     static final String KEY_SESSION_KEY = "lastfm_session_key";
     static final String KEY_USERNAME = "lastfm_username";
     static final String KEY_QUEUE = "lastfm_queue";
@@ -51,11 +56,46 @@ public final class LastFmSettings {
         return Math.max(MIN_THRESHOLD_PERCENT, Math.min(MAX_THRESHOLD_PERCENT, value));
     }
 
-    public static String getApiKey() {
+    /** Whether this build has Glassworks' own Last.fm API account (release builds from CI do). */
+    public static boolean hasBuiltInApiAccount() {
+        return !BuildConfig.LASTFM_API_KEY.isEmpty() && !BuildConfig.LASTFM_API_SECRET.isEmpty();
+    }
+
+    /**
+     * Whether requests use the API key the user entered instead of the built-in one. Users who
+     * entered a key before the built-in one existed keep using theirs, so their session stays valid.
+     */
+    public static boolean isUsingOwnApiKey() {
+        return !hasBuiltInApiAccount()
+                || GlassworksSettings.getBoolean(KEY_USE_OWN_API_KEY, !getOwnApiKey().isEmpty());
+    }
+
+    /** Switches between the built-in and the user's API key. A session only works with its key, so this logs out. */
+    public static void setUsingOwnApiKey(boolean useOwn) {
+        if (useOwn != isUsingOwnApiKey()) {
+            logOut();
+        }
+        SharedPreferences prefs = GlassworksSettings.getPreferences();
+        if (prefs != null) {
+            prefs.edit().putBoolean(KEY_USE_OWN_API_KEY, useOwn).apply();
+        }
+    }
+
+    /** The API key requests use. */
+    static String getApiKey() {
+        return isUsingOwnApiKey() ? getOwnApiKey() : BuildConfig.LASTFM_API_KEY;
+    }
+
+    static String getApiSecret() {
+        return isUsingOwnApiKey() ? getOwnApiSecret() : BuildConfig.LASTFM_API_SECRET;
+    }
+
+    /** The API key the user entered, or "". */
+    public static String getOwnApiKey() {
         return GlassworksSettings.getString(KEY_API_KEY, "").trim();
     }
 
-    public static String getApiSecret() {
+    public static String getOwnApiSecret() {
         return GlassworksSettings.getString(KEY_API_SECRET, "").trim();
     }
 
@@ -112,10 +152,10 @@ public final class LastFmSettings {
         }
     }
 
-    static void incrementScrobbleCount() {
+    static void addScrobbleCount(int count) {
         SharedPreferences prefs = GlassworksSettings.getPreferences();
-        if (prefs != null) {
-            prefs.edit().putInt(KEY_SCROBBLE_COUNT, getScrobbleCount() + 1).apply();
+        if (prefs != null && count > 0) {
+            prefs.edit().putInt(KEY_SCROBBLE_COUNT, getScrobbleCount() + count).apply();
         }
     }
 

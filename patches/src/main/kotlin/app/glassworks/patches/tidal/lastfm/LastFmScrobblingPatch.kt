@@ -10,7 +10,7 @@ import app.morphe.patcher.patch.bytecodePatch
 val lastFmScrobblingPatch = bytecodePatch(
     name = "Last.fm scrobbling",
     description = "Scrobbles the tracks you play to Last.fm and shows what is playing on your profile. " +
-        "Log in with your own Last.fm API key in Settings > Glassworks > Last.fm.",
+        "Log in with your Last.fm account in Settings > Glassworks > Last.fm.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_TIDAL)

@@ -13,6 +13,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -27,6 +28,9 @@ final class LastFmClient {
     private static final String API_URL = "https://ws.audioscrobbler.com/2.0/";
     private static final int TIMEOUT_MS = 15_000;
 
+    /** Most scrobbles Last.fm accepts in one track.scrobble request. */
+    static final int MAX_BATCH = 50;
+
     /** Last.fm error codes that mean the request may succeed later. */
     static final int ERROR_SERVICE_OFFLINE = 11;
     static final int ERROR_TEMPORARY = 16;
@@ -35,6 +39,11 @@ final class LastFmClient {
     static final int ERROR_INVALID_SESSION = 9;
     static final int ERROR_INVALID_API_KEY = 10;
     static final int ERROR_AUTHENTICATION = 4;
+    /** Browser login: the user has not allowed access yet. */
+    static final int ERROR_TOKEN_NOT_AUTHORIZED = 14;
+    /** Browser login: the token is older than 60 minutes or was already used. */
+    static final int ERROR_TOKEN_EXPIRED = 15;
+    static final int ERROR_SUSPENDED_API_KEY = 26;
 
     /** A failed call. {@link #code} is Last.fm's error code, or 0 for network errors. */
     static final class LastFmException extends Exception {
@@ -75,10 +84,46 @@ final class LastFmClient {
         params.put("method", "auth.getMobileSession");
         params.put("username", username);
         params.put("password", password);
-        JSONObject response = call(params);
+        return parseSession(call(params), username);
+    }
+
+    /** Starts a browser login: the user approves this token at {@link #authUrl(String)}. Valid for 60 minutes. */
+    String getToken() throws LastFmException {
+        Map<String, String> params = new TreeMap<>();
+        params.put("method", "auth.getToken");
+        String token = call(params).optString("token", "");
+        if (token.isEmpty()) {
+            throw new LastFmException(-1, "Unexpected response from Last.fm");
+        }
+        return token;
+    }
+
+    /** The page where the user allows this app to use their account. */
+    String authUrl(String token) {
+        try {
+            return "https://www.last.fm/api/auth/?api_key=" + URLEncoder.encode(apiKey, "UTF-8")
+                    + "&token=" + URLEncoder.encode(token, "UTF-8");
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Finishes a browser login. Throws {@link #ERROR_TOKEN_NOT_AUTHORIZED} until the user allowed access.
+     *
+     * @return {sessionKey, username}
+     */
+    String[] getSession(String token) throws LastFmException {
+        Map<String, String> params = new TreeMap<>();
+        params.put("method", "auth.getSession");
+        params.put("token", token);
+        return parseSession(call(params), "");
+    }
+
+    private static String[] parseSession(JSONObject response, String fallbackName) throws LastFmException {
         try {
             JSONObject session = response.getJSONObject("session");
-            return new String[]{session.getString("key"), session.optString("name", username)};
+            return new String[]{session.getString("key"), session.optString("name", fallbackName)};
         } catch (JSONException e) {
             throw new LastFmException(-1, "Unexpected response from Last.fm");
         }
@@ -92,23 +137,42 @@ final class LastFmClient {
         call(params);
     }
 
-    void scrobble(String sessionKey, Track track, long timestampSeconds) throws LastFmException {
+    /**
+     * Scrobbles up to {@link #MAX_BATCH} tracks in one request.
+     *
+     * @return how many Last.fm accepted; the rest were ignored by its filters (such as a
+     *         timestamp that is too old), which is not an error
+     */
+    int scrobble(String sessionKey, List<Track> tracks, long[] timestampsSeconds) throws LastFmException {
+        if (tracks.isEmpty() || tracks.size() > MAX_BATCH) {
+            throw new IllegalArgumentException("Batch size " + tracks.size());
+        }
         Map<String, String> params = new TreeMap<>();
         params.put("method", "track.scrobble");
         params.put("sk", sessionKey);
-        putTrack(params, track);
-        params.put("timestamp", Long.toString(timestampSeconds));
-        call(params);
+        for (int i = 0; i < tracks.size(); i++) {
+            String suffix = tracks.size() == 1 ? "" : "[" + i + "]";
+            putTrack(params, tracks.get(i), suffix);
+            params.put("timestamp" + suffix, Long.toString(timestampsSeconds[i]));
+        }
+        JSONObject response = call(params);
+        JSONObject scrobbles = response.optJSONObject("scrobbles");
+        JSONObject attr = scrobbles == null ? null : scrobbles.optJSONObject("@attr");
+        return attr == null ? tracks.size() : attr.optInt("accepted", tracks.size());
     }
 
     private static void putTrack(Map<String, String> params, Track track) {
-        params.put("artist", track.artist);
-        params.put("track", track.title);
+        putTrack(params, track, "");
+    }
+
+    private static void putTrack(Map<String, String> params, Track track, String suffix) {
+        params.put("artist" + suffix, track.artist);
+        params.put("track" + suffix, track.title);
         if (!track.album.isEmpty()) {
-            params.put("album", track.album);
+            params.put("album" + suffix, track.album);
         }
         if (track.durationMs > 0) {
-            params.put("duration", Long.toString(track.durationMs / 1000));
+            params.put("duration" + suffix, Long.toString(track.durationMs / 1000));
         }
     }
 

@@ -9,7 +9,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import app.glassworks.extension.tidal.settings.GlassworksSettings;
@@ -24,7 +26,8 @@ import app.glassworks.extension.tidal.settings.GlassworksSettings;
  * whichever comes first.
  * <p>
  * All state lives on one background thread. Scrobbles that fail because of the network or a
- * Last.fm outage are queued and sent with the next scrobble or app start.
+ * Last.fm outage are queued and sent with the next scrobble or app start, up to 50 per request.
+ * After a rate-limit error, nothing is sent for a few minutes.
  */
 final class Scrobbler {
 
@@ -34,13 +37,18 @@ final class Scrobbler {
     private static final long MAX_THRESHOLD_MS = 240_000;
     /** Used when TIDAL does not report a duration. */
     private static final long UNKNOWN_DURATION_THRESHOLD_MS = 240_000;
-    /** Last.fm accepts at most 50 scrobbles per request; also caps the offline queue. */
+    /** Caps the offline queue. It is sent in batches of {@link LastFmClient#MAX_BATCH}. */
     private static final int MAX_QUEUE = 500;
+    /** How long all requests pause after Last.fm reports a rate limit. */
+    private static final long RATE_LIMIT_BACKOFF_MS = 5 * 60_000;
 
     private static Scrobbler instance;
 
     private final Handler handler;
     private final Runnable thresholdCheck = this::checkThreshold;
+    private final Runnable delayedFlush = this::flushQueue;
+    /** {@link SystemClock#elapsedRealtime()} until which no requests are sent, after a rate limit. */
+    private long backoffUntil;
 
     /** Latest track of each media session (TIDAL may have more than one, such as for Sonos). */
     private final Map<Object, Track> sessionTracks = new HashMap<>();
@@ -216,7 +224,7 @@ final class Scrobbler {
     }
 
     private void sendNowPlaying(Track playingTrack) {
-        if (!LastFmSettings.isNowPlayingEnabled()) {
+        if (!LastFmSettings.isNowPlayingEnabled() || isBackingOff()) {
             return;
         }
         LastFmClient client = client();
@@ -251,7 +259,8 @@ final class Scrobbler {
 
     private void flushQueue() {
         LastFmClient client = client();
-        if (client == null) {
+        if (client == null || isBackingOff()) {
+            // While backing off, the delayed flush sends the queue.
             return;
         }
         queueFlushed = true;
@@ -259,22 +268,13 @@ final class Scrobbler {
         int sent = 0;
         try {
             while (sent < queue.length()) {
-                JSONObject item = queue.getJSONObject(sent);
-                try {
-                    client.scrobble(LastFmSettings.getSessionKey(), Track.fromJson(item), item.optLong("timestamp"));
-                    LastFmSettings.incrementScrobbleCount();
-                    LastFmSettings.setLastError("");
-                } catch (LastFmClient.LastFmException e) {
-                    handleError(e);
-                    if (e.isRetryable() || e.code == LastFmClient.ERROR_INVALID_SESSION
-                            || e.code == LastFmClient.ERROR_INVALID_API_KEY) {
-                        // Keep it and the rest of the queue for later.
-                        break;
-                    }
-                    // Rejected (such as a missing artist): drop it.
-                    Log.w(TAG, "Last.fm rejected a scrobble: " + e.getMessage());
+                int end = Math.min(sent + LastFmClient.MAX_BATCH, queue.length());
+                int done = sendBatch(client, queue, sent, end);
+                sent += done;
+                if (sent < end) {
+                    // Keep the rest of the queue for later.
+                    break;
                 }
-                sent++;
             }
         } catch (JSONException e) {
             Log.e(TAG, "Corrupt scrobble queue, clearing it", e);
@@ -289,12 +289,67 @@ final class Scrobbler {
                 remaining.length() == 0 ? null : remaining.toString());
     }
 
+    /**
+     * Sends queue items {@code [from, to)} in one request.
+     *
+     * @return how many items were dealt with (sent, or dropped because Last.fm rejected them);
+     *         fewer than {@code to - from} means the rest must stay queued
+     */
+    private int sendBatch(LastFmClient client, JSONArray queue, int from, int to) throws JSONException {
+        List<Track> tracks = new ArrayList<>(to - from);
+        long[] timestamps = new long[to - from];
+        for (int i = from; i < to; i++) {
+            JSONObject item = queue.getJSONObject(i);
+            tracks.add(Track.fromJson(item));
+            timestamps[i - from] = item.optLong("timestamp");
+        }
+        try {
+            int accepted = client.scrobble(LastFmSettings.getSessionKey(), tracks, timestamps);
+            LastFmSettings.addScrobbleCount(accepted);
+            LastFmSettings.setLastError("");
+            if (accepted < tracks.size()) {
+                Log.i(TAG, "Last.fm ignored " + (tracks.size() - accepted) + " of " + tracks.size() + " scrobbles");
+            }
+            return to - from;
+        } catch (LastFmClient.LastFmException e) {
+            handleError(e);
+            if (e.isRetryable() || e.code == LastFmClient.ERROR_INVALID_SESSION
+                    || e.code == LastFmClient.ERROR_INVALID_API_KEY) {
+                return 0;
+            }
+            if (to - from == 1) {
+                // Rejected (such as a missing artist): drop it.
+                Log.w(TAG, "Last.fm rejected a scrobble: " + e.getMessage());
+                return 1;
+            }
+            // One bad track can fail the whole request: send them one by one so only it is dropped.
+            for (int i = from; i < to; i++) {
+                if (sendBatch(client, queue, i, i + 1) == 0) {
+                    return i - from;
+                }
+            }
+            return to - from;
+        }
+    }
+
+    private boolean isBackingOff() {
+        return SystemClock.elapsedRealtime() < backoffUntil;
+    }
+
     private void handleError(LastFmClient.LastFmException e) {
         Log.w(TAG, "Last.fm request failed (" + e.code + "): " + e.getMessage());
+        if (e.code == LastFmClient.ERROR_RATE_LIMIT) {
+            // Stop all requests for a while, then send the queue again.
+            backoffUntil = SystemClock.elapsedRealtime() + RATE_LIMIT_BACKOFF_MS;
+            handler.removeCallbacks(delayedFlush);
+            handler.postDelayed(delayedFlush, RATE_LIMIT_BACKOFF_MS + 1_000);
+        }
         if (e.code == LastFmClient.ERROR_INVALID_SESSION) {
             LastFmSettings.setLastError("Last.fm ended the session. Log in again.");
         } else if (e.code == LastFmClient.ERROR_INVALID_API_KEY) {
-            LastFmSettings.setLastError("Last.fm rejected the API key.");
+            LastFmSettings.setLastError(LastFmSettings.isUsingOwnApiKey()
+                    ? "Last.fm rejected the API key."
+                    : "Last.fm rejected the built-in API key. Use your own key under Advanced.");
         } else if (e.isRetryable()) {
             LastFmSettings.setLastError("Last.fm could not be reached. Scrobbles are kept and sent later.");
         } else {

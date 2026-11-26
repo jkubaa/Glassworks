@@ -1,13 +1,38 @@
+import java.util.Properties
+
 extension {
     name = "extensions/tidal.mpe"
+}
+
+// The built-in Last.fm API account. CI passes it from the LASTFM_API_KEY and LASTFM_API_SECRET
+// repository secrets; local builds can set lastfm.apiKey and lastfm.apiSecret in local.properties.
+// Without them the build still works, and the app asks users for their own key.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun lastFmValue(environmentVariable: String, localProperty: String): String {
+    val value = providers.environmentVariable(environmentVariable).orNull?.trim().orEmpty()
+        .ifEmpty { localProperties.getProperty(localProperty, "").trim() }
+    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
 android {
     namespace = "app.glassworks.extension.tidal"
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         // TIDAL 2.221.0 requires API 32, and the frosted backdrop uses RenderEffect (API 31).
         minSdk = 32
+
+        buildConfigField("String", "LASTFM_API_KEY", lastFmValue("LASTFM_API_KEY", "lastfm.apiKey"))
+        buildConfigField("String", "LASTFM_API_SECRET", lastFmValue("LASTFM_API_SECRET", "lastfm.apiSecret"))
     }
 }
 
