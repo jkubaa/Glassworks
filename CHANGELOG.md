@@ -1,3 +1,9 @@
+## [1.0.0-dev.3](https://github.com/jkubaa/Glassworks/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2026-11-26)
+
+### 🐛 Bug Fixes
+
+* Rename the TIDAL settings page to Glassworks ([0fe70bb](https://github.com/jkubaa/Glassworks/commit/0fe70bbc0f93013b00d30930078ab138b21cad16))
+
 ## [1.0.0-dev.2](https://github.com/jkubaa/tideglass-patches/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2026-11-25)
 
 ### 🐛 Bug Fixes
