@@ -241,12 +241,14 @@ public final class FrostedPillPatch {
 
     /**
      * Replaces {@code padding$default(start, top, end, bottom)} calls in the mini player row.
-     * The title and artist column has 12dp at the start and 16dp at the end; with a frosted style
-     * the end is 4dp, so the text runs closer to the play button, where its fade ends.
+     * The title and artist column has 12dp at the start and 16dp at the end. With a frosted style
+     * the end is 4dp, so the text runs closer to the play button, and the start moves left by the
+     * left fade's width; the text is padded back inside its marquee (see {@link MarqueeFade}).
      */
     public static Modifier miniPlayerPaddingDefault(Modifier modifier, float start, float top, float end,
                                                     float bottom, int defaults, Object unused) {
         if (GlassworksSettings.isPillBarEnabled() && start == TEXT_START_DP && end == TEXT_END_DP) {
+            start = TEXT_START_DP - MarqueeFade.START_INSET_DP;
             end = COMPACT_TEXT_END_DP;
         }
         // Unset arguments are 0 in TIDAL's calls, so passing all four gives the same result.
