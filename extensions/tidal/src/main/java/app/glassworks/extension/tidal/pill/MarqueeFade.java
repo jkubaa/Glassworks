@@ -31,6 +31,10 @@ import java.lang.ref.WeakReference;
  * knows the text's full width. The fade is only drawn while the text is wider than the window,
  * so short titles are not faded.
  * <p>
+ * The left fade only shows while the text has scrolled away from its start: when the marquee
+ * pauses at the start between loops, the first letters are not faded. The scroll position is
+ * read from the marquee node next to the fade node.
+ * <p>
  * One fade and probe pair is kept per text line ({@link #TITLE}, {@link #SUBTITLE}).
  */
 final class MarqueeFade {
@@ -40,6 +44,12 @@ final class MarqueeFade {
 
     /** Width of each fade, in dp. */
     private static final float FADE_DP = 14f;
+    private static final String MARQUEE_NODE = "androidx.compose.foundation.MarqueeModifierNode";
+
+    private static java.lang.reflect.Field childField;
+    private static java.lang.reflect.Field offsetField;
+    private static java.lang.reflect.Method animatableValue;
+    private static boolean reflectionFailed;
 
     private static final float[] windowWidth = new float[2];
     private static final float[] textWidth = new float[2];
@@ -70,6 +80,7 @@ final class MarqueeFade {
         private final int line;
         private final Paint maskPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private float shaderWidth = -1f;
+        private int shaderLeftAlpha = -1;
 
         FadeNode(int line) {
             this.line = line;
@@ -99,17 +110,56 @@ final class MarqueeFade {
             int save = canvas.saveLayer(0f, top, width, bottom, null);
             try {
                 scope.drawContent();
-                if (shaderWidth != width) {
+                float fadePx = Math.min(FADE_DP * density(), width / 4f);
+                // Fully opaque at the left edge while the text is at its start, fading in as it
+                // scrolls the first fadePx pixels.
+                float scrolled = Math.min(1f, Math.abs(scrollOffset()) / fadePx);
+                int leftAlpha = Math.round(255 * (1f - scrolled));
+                if (shaderWidth != width || shaderLeftAlpha != leftAlpha) {
                     shaderWidth = width;
-                    float fade = Math.min(FADE_DP * density(), width / 4f) / width;
+                    shaderLeftAlpha = leftAlpha;
+                    float fade = fadePx / width;
                     maskPaint.setShader(new LinearGradient(0f, 0f, width, 0f,
-                            new int[]{0x00000000, 0xFF000000, 0xFF000000, 0x00000000},
+                            new int[]{leftAlpha << 24, 0xFF000000, 0xFF000000, 0x00000000},
                             new float[]{0f, fade, 1f - fade, 1f}, Shader.TileMode.CLAMP));
                 }
                 canvas.drawRect(0f, top, width, bottom, maskPaint);
             } finally {
                 canvas.restoreToCount(save);
             }
+        }
+
+        /** The marquee's scroll offset in pixels (0 at the start), or 0 if it cannot be read. */
+        private float scrollOffset() {
+            if (reflectionFailed) {
+                return 0f;
+            }
+            try {
+                if (childField == null) {
+                    childField = Modifier.Node.class.getDeclaredField("child");
+                    childField.setAccessible(true);
+                }
+                Object node = childField.get(this);
+                for (int i = 0; node != null && i < 8; i++) {
+                    if (node.getClass().getName().equals(MARQUEE_NODE)) {
+                        if (offsetField == null) {
+                            offsetField = node.getClass().getDeclaredField("offset");
+                            offsetField.setAccessible(true);
+                        }
+                        Object animatable = offsetField.get(node);
+                        if (animatableValue == null) {
+                            animatableValue = animatable.getClass().getMethod("getValue");
+                        }
+                        Object value = animatableValue.invoke(animatable);
+                        return value instanceof Float ? (Float) value : 0f;
+                    }
+                    node = childField.get(node);
+                }
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                android.util.Log.w("Glassworks", "Cannot read the marquee position", e);
+                reflectionFailed = true;
+            }
+            return 0f;
         }
 
         private float density() {
