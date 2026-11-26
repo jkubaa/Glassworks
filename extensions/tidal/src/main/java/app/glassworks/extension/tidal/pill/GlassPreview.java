@@ -170,8 +170,22 @@ public final class GlassPreview extends View {
         paint.setColor(0x99FFFFFF);
         canvas.drawRoundRect(textLeft, top + height * 0.56f, textLeft + 60f * density, top + height * 0.56f + 6f * density,
                 3 * density, 3 * density, paint);
-        paint.setColor(0xFFFFFFFF);
-        canvas.drawCircle(right - pad - 40f * density, top + height / 2f, 15f * density, paint);
+        float playX = right - pad - 40f * density;
+        float centerY = top + height / 2f;
+        boolean circle = !GlassworksSettings.isPillBarEnabled() || GlassworksSettings.isPlayButtonCircle();
+        if (circle) {
+            paint.setColor(0xFFFFFFFF);
+            canvas.drawCircle(playX, centerY, 15f * density, paint);
+        }
+        // A play triangle, black on the circle or white without it.
+        Path play = new Path();
+        float s = 7f * density;
+        play.moveTo(playX - s * 0.6f, centerY - s);
+        play.lineTo(playX + s, centerY);
+        play.lineTo(playX - s * 0.6f, centerY + s);
+        play.close();
+        paint.setColor(circle ? 0xFF000000 : 0xFFFFFFFF);
+        canvas.drawPath(play, paint);
     }
 
     private void drawTabs(Canvas canvas, float left, float right, float top, float height, int count,

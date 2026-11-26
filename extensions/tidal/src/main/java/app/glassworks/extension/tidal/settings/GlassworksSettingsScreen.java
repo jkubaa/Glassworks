@@ -234,6 +234,11 @@ final class GlassworksSettingsScreen {
                 index -> GlassworksSettings.putBoolean(GlassworksSettings.KEY_COMPACT_MINI_PLAYER, index == 1),
                 pills);
 
+        switchRow("Play button circle", "Show the play and pause button on a white circle, as in TIDAL.",
+                GlassworksSettings::isPlayButtonCircle,
+                value -> GlassworksSettings.putBoolean(GlassworksSettings.KEY_PLAY_BUTTON_CIRCLE, value),
+                pills);
+
         choiceRow("Artwork shape", new String[]{"TIDAL's", "Rounded", "Circle"},
                 GlassworksSettings::getArtworkShape,
                 index -> GlassworksSettings.putInt(GlassworksSettings.KEY_ARTWORK_SHAPE, index),

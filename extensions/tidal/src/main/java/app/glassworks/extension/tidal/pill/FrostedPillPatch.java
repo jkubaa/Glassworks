@@ -187,6 +187,25 @@ public final class FrostedPillPatch {
         return ComposeCompat.size(modifier, sizeDp);
     }
 
+    /**
+     * Replaces the play/pause button's icon button rank. TIDAL uses PRIMARY, a filled white
+     * circle. While a frosted style is on, and unless the circle is turned on in settings,
+     * TERTIARY is used instead: a plain icon with no background, like the next button.
+     * (SECONDARY still draws a faint grey circle.)
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Object playButtonRank(Object rank) {
+        if (!(rank instanceof Enum) || !GlassworksSettings.isPillBarEnabled()
+                || GlassworksSettings.isPlayButtonCircle()) {
+            return rank;
+        }
+        try {
+            return Enum.valueOf(((Enum) rank).getDeclaringClass(), "TERTIARY");
+        } catch (IllegalArgumentException e) {
+            return rank;
+        }
+    }
+
     private static boolean isCompactMiniPlayer() {
         return GlassworksSettings.isPillBarEnabled() && GlassworksSettings.isCompactMiniPlayer();
     }

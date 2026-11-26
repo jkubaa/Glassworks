@@ -24,6 +24,7 @@ public final class GlassworksSettings {
     public static final int DEFAULT_ROUNDNESS_PERCENT = 100;
     public static final int DEFAULT_SIDE_MARGIN_DP = 6;
     public static final boolean DEFAULT_COMPACT_MINI_PLAYER = true;
+    public static final boolean DEFAULT_PLAY_BUTTON_CIRCLE = false;
     public static final int DEFAULT_LIFT_DP = 0;
     public static final int DEFAULT_TINT_COLOR = 0;
     public static final int DEFAULT_TINT_PERCENT = 55;
@@ -89,12 +90,13 @@ public final class GlassworksSettings {
     static final String KEY_SHADOW_PERCENT = "shadow_percent";
     static final String KEY_ARTWORK_SHAPE = "artwork_shape";
     static final String KEY_COMPACT_MINI_PLAYER = "compact_mini_player";
+    static final String KEY_PLAY_BUTTON_CIRCLE = "play_button_circle";
 
     private static final String[] NAVIGATION_BAR_KEYS = {
             KEY_PILL_BAR, KEY_SINGLE_PILL, KEY_PILL_GAP_DP, KEY_ROUNDNESS_PERCENT, KEY_SIDE_MARGIN_DP,
             KEY_LIFT_DP, KEY_TINT_COLOR, KEY_TINT_PERCENT, KEY_BLUR_DP, KEY_SATURATION_PERCENT,
             KEY_EDGE_HIGHLIGHT, KEY_SEPARATE_TAB, KEY_TAB_ORDER, KEY_GLASS_STYLE, KEY_SHADOW_PERCENT,
-            KEY_ARTWORK_SHAPE, KEY_COMPACT_MINI_PLAYER,
+            KEY_ARTWORK_SHAPE, KEY_COMPACT_MINI_PLAYER, KEY_PLAY_BUTTON_CIRCLE,
     };
 
     private static volatile SharedPreferences preferences;
@@ -171,6 +173,11 @@ public final class GlassworksSettings {
     /** Whether the mini player uses smaller artwork and padding, about 52dp tall instead of 64dp. */
     public static boolean isCompactMiniPlayer() {
         return getBoolean(KEY_COMPACT_MINI_PLAYER, DEFAULT_COMPACT_MINI_PLAYER);
+    }
+
+    /** Whether the mini player's play/pause button keeps TIDAL's white circle. */
+    public static boolean isPlayButtonCircle() {
+        return getBoolean(KEY_PLAY_BUTTON_CIRCLE, DEFAULT_PLAY_BUTTON_CIRCLE);
     }
 
     /** {@link #ARTWORK_TIDAL}, {@link #ARTWORK_ROUNDED} or {@link #ARTWORK_CIRCLE}. */

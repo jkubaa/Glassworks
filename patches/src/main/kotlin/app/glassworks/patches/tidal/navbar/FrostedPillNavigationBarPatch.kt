@@ -15,9 +15,11 @@ import app.glassworks.patches.shared.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val EXTENSION_CLASS = "Lapp/glassworks/extension/tidal/pill/FrostedPillPatch;"
+private const val ICON_BUTTON_RANK = "Lcom/squareup/ui/market/core/components/properties/IconButton\$Rank;"
 private const val TAB_BAR_HOOK = "Lapp/glassworks/extension/tidal/pill/TabBarHook;"
 private const val MODIFIER = "Landroidx/compose/ui/Modifier;"
 private const val SHAPE = "Landroidx/compose/ui/graphics/Shape;"
@@ -80,6 +82,33 @@ val frostedPillNavigationBarPatch = bytecodePatch(
         // Replace the mini player artwork's corner shape with the one from the settings.
         MiniPlayerRowFingerprint.let {
             val method = it.method
+
+            // The play/pause button uses the PRIMARY icon button rank (a filled white circle).
+            // Let the extension swap it for SECONDARY, the plain icon the next button uses.
+            // Inserted after the shape match, so the match index stays valid.
+            val rankIndices = method.instructions.withIndex().filter { (_, instruction) ->
+                instruction.opcode == Opcode.SGET_OBJECT &&
+                    ((instruction as ReferenceInstruction).reference as FieldReference).let { field ->
+                        field.definingClass == ICON_BUTTON_RANK && field.name == "PRIMARY"
+                    }
+            }.map { (index, _) -> index }.reversed()
+            if (rankIndices.isEmpty()) {
+                throw PatchException("No play button rank in the MiniPlayer composable")
+            }
+            if (rankIndices.any { index -> index < it.instructionMatches.last().index }) {
+                throw PatchException("Unexpected play button rank before the artwork shape")
+            }
+            rankIndices.forEach { index ->
+                val register = method.getInstruction<OneRegisterInstruction>(index).registerA
+                method.addInstructions(
+                    index + 1,
+                    """
+                        invoke-static/range { v$register .. v$register }, $EXTENSION_CLASS->playButtonRank(Ljava/lang/Object;)Ljava/lang/Object;
+                        move-result-object v$register
+                        check-cast v$register, $ICON_BUTTON_RANK
+                    """,
+                )
+            }
 
             // Route the row's padding and the artwork and button sizes through the extension,
             // which makes them smaller for the compact mini player. The redirects keep the
