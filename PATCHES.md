@@ -1,6 +1,6 @@
 # Patches
 
-> Generated from `patches-list.json` — **v1.0.0-dev.3** (`dev`) · **1 patch** across **1 app** · back to [README](README.md)
+> Generated from `patches-list.json` — **v1.0.0-dev.4** (`dev`) · **2 patches** across **1 app** · back to [README](README.md)
 
 ---
 
@@ -10,6 +10,7 @@
 
 | Patch | Details |
 |---|---|
-| **Frosted pill navigation bar** | Splits the bottom bar into a frosted-glass pill for the mini player and another for the tabs, with the screen content blurred behind them. Adjust it or switch back to the original bar in Settings &gt; Glassworks. |
+| **Last.fm scrobbling** | Scrobbles the tracks you play to Last.fm and shows what is playing on your profile. Log in with your own Last.fm API key in Settings &gt; Glassworks &gt; Last.fm. |
+| **Pill navigation bar** | Replaces the bottom bar with floating glass pills for the mini player and the tabs, with the screen content blurred behind them. Style them in Settings &gt; Glassworks: frosted or liquid glass, one or two pills, their shape, size and tint (including one from the album art), a compact mini player, and hidden, reordered or separate tabs. |
 
 ---

@@ -23,11 +23,11 @@ Click the button below, or manually add this repo url to Morphe Manager: https:/
 ## 🩹 Patches list
 
 <!-- PATCHES_START -->
-> **[v1.0.0-dev.3](https://github.com/jkubaa/Glassworks/releases/tag/v1.0.0-dev.3)**&nbsp;&nbsp;&middot;&nbsp;&nbsp;`dev`&nbsp;&nbsp;&middot;&nbsp;&nbsp;**1 patch** across **1 app**&nbsp;&nbsp;&middot;&nbsp;&nbsp;[Full details](PATCHES.md)
+> **[v1.0.0-dev.4](https://github.com/jkubaa/Glassworks/releases/tag/v1.0.0-dev.4)**&nbsp;&nbsp;&middot;&nbsp;&nbsp;`dev`&nbsp;&nbsp;&middot;&nbsp;&nbsp;**2 patches** across **1 app**&nbsp;&nbsp;&middot;&nbsp;&nbsp;[Full details](PATCHES.md)
 
 | # | App | Patches | Version | Package |
 |---|---|---|---|---|
-| 1 | [**TIDAL**](PATCHES.md#tidal-comaspirotidal) | 1 | `2.221.0` | [`com.aspiro.tidal`](https://play.google.com/store/apps/details?id=com.aspiro.tidal) |
+| 1 | [**TIDAL**](PATCHES.md#tidal-comaspirotidal) | 2 | `2.221.0` | [`com.aspiro.tidal`](https://play.google.com/store/apps/details?id=com.aspiro.tidal) |
 <!-- PATCHES_END -->
 
 ### 🛠️ Building locally
