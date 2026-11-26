@@ -13,6 +13,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -26,6 +27,9 @@ final class LastFmClient {
 
     private static final String API_URL = "https://ws.audioscrobbler.com/2.0/";
     private static final int TIMEOUT_MS = 15_000;
+
+    /** Most scrobbles Last.fm accepts in one track.scrobble request. */
+    static final int MAX_BATCH = 50;
 
     /** Last.fm error codes that mean the request may succeed later. */
     static final int ERROR_SERVICE_OFFLINE = 11;
@@ -92,23 +96,42 @@ final class LastFmClient {
         call(params);
     }
 
-    void scrobble(String sessionKey, Track track, long timestampSeconds) throws LastFmException {
+    /**
+     * Scrobbles up to {@link #MAX_BATCH} tracks in one request.
+     *
+     * @return how many Last.fm accepted; the rest were ignored by its filters (such as a
+     *         timestamp that is too old), which is not an error
+     */
+    int scrobble(String sessionKey, List<Track> tracks, long[] timestampsSeconds) throws LastFmException {
+        if (tracks.isEmpty() || tracks.size() > MAX_BATCH) {
+            throw new IllegalArgumentException("Batch size " + tracks.size());
+        }
         Map<String, String> params = new TreeMap<>();
         params.put("method", "track.scrobble");
         params.put("sk", sessionKey);
-        putTrack(params, track);
-        params.put("timestamp", Long.toString(timestampSeconds));
-        call(params);
+        for (int i = 0; i < tracks.size(); i++) {
+            String suffix = tracks.size() == 1 ? "" : "[" + i + "]";
+            putTrack(params, tracks.get(i), suffix);
+            params.put("timestamp" + suffix, Long.toString(timestampsSeconds[i]));
+        }
+        JSONObject response = call(params);
+        JSONObject scrobbles = response.optJSONObject("scrobbles");
+        JSONObject attr = scrobbles == null ? null : scrobbles.optJSONObject("@attr");
+        return attr == null ? tracks.size() : attr.optInt("accepted", tracks.size());
     }
 
     private static void putTrack(Map<String, String> params, Track track) {
-        params.put("artist", track.artist);
-        params.put("track", track.title);
+        putTrack(params, track, "");
+    }
+
+    private static void putTrack(Map<String, String> params, Track track, String suffix) {
+        params.put("artist" + suffix, track.artist);
+        params.put("track" + suffix, track.title);
         if (!track.album.isEmpty()) {
-            params.put("album", track.album);
+            params.put("album" + suffix, track.album);
         }
         if (track.durationMs > 0) {
-            params.put("duration", Long.toString(track.durationMs / 1000));
+            params.put("duration" + suffix, Long.toString(track.durationMs / 1000));
         }
     }
 

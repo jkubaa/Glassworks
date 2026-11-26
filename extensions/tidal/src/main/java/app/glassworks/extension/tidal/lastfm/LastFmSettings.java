@@ -15,7 +15,8 @@ public final class LastFmSettings {
     public static final boolean DEFAULT_NOW_PLAYING = true;
     public static final boolean DEFAULT_MAIN_ARTIST_ONLY = true;
     public static final int DEFAULT_THRESHOLD_PERCENT = 50;
-    public static final int MIN_THRESHOLD_PERCENT = 25;
+    /** Last.fm's rule: a track counts once half of it played (or 4 minutes), never earlier. */
+    public static final int MIN_THRESHOLD_PERCENT = 50;
     public static final int MAX_THRESHOLD_PERCENT = 95;
 
     public static final String KEY_ENABLED = "lastfm_enabled";
@@ -112,10 +113,10 @@ public final class LastFmSettings {
         }
     }
 
-    static void incrementScrobbleCount() {
+    static void addScrobbleCount(int count) {
         SharedPreferences prefs = GlassworksSettings.getPreferences();
-        if (prefs != null) {
-            prefs.edit().putInt(KEY_SCROBBLE_COUNT, getScrobbleCount() + 1).apply();
+        if (prefs != null && count > 0) {
+            prefs.edit().putInt(KEY_SCROBBLE_COUNT, getScrobbleCount() + count).apply();
         }
     }
 
