@@ -134,6 +134,38 @@ val frostedPillNavigationBarPatch = bytecodePatch(
                 method.redirectStaticCall(index, "$EXTENSION_CLASS->miniPlayerSize(${MODIFIER}F)$MODIFIER")
             }
 
+            // While buffering, TIDAL shows a spinner on a white circle instead of the play button.
+            // Route the backgrounds (the artwork's and the circle's) and the spinner through the
+            // extension, which drops the circle and makes the spinner white with the play button.
+            method.instructions.withIndex().filter { (_, instruction) ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) {
+                    return@filter false
+                }
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                reference.definingClass == "Landroidx/compose/foundation/BackgroundKt;" &&
+                    reference.name == "background-bw27NRU" &&
+                    reference.parameterTypes.map { type -> type.toString() } == listOf(MODIFIER, "J", SHAPE)
+            }.forEach { (index, _) ->
+                method.redirectStaticCall(index, "$EXTENSION_CLASS->miniPlayerBackground(${MODIFIER}J$SHAPE)$MODIFIER")
+            }
+            val spinnerCalls = method.instructions.withIndex().filter { (_, instruction) ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) {
+                    return@filter false
+                }
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                reference.definingClass == "Landroidx/compose/material3/ProgressIndicatorKt;" &&
+                    reference.name == "CircularProgressIndicator-LxG7B9w"
+            }
+            if (spinnerCalls.isEmpty()) {
+                throw PatchException("No loading spinner in the MiniPlayer composable")
+            }
+            spinnerCalls.forEach { (index, _) ->
+                method.redirectStaticCall(
+                    index,
+                    "$EXTENSION_CLASS->miniPlayerSpinner(${MODIFIER}JFJILjava/lang/Object;II)V",
+                )
+            }
+
             val shapeResultIndex = it.instructionMatches.last().index + 1
             if (method.getInstruction(shapeResultIndex).opcode != Opcode.MOVE_RESULT_OBJECT) {
                 throw PatchException("No result for the artwork shape in the MiniPlayer composable")

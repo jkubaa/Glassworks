@@ -206,6 +206,37 @@ public final class FrostedPillPatch {
         }
     }
 
+    /**
+     * Replaces {@code Modifier.background(color, shape)} in the mini player row: the artwork's
+     * background, and the white circle behind the loading spinner, which is dropped with the
+     * play button circle.
+     */
+    public static Modifier miniPlayerBackground(Modifier modifier, long color, Shape shape) {
+        if (hidePlayButtonCircle() && shape != null && shape == ComposeCompat.circleShape()) {
+            return modifier;
+        }
+        return ComposeCompat.background(modifier, color, shape);
+    }
+
+    /**
+     * Replaces the mini player's loading spinner ({@code CircularProgressIndicator}). TIDAL draws
+     * it dark on the white circle; without the circle it is white on a faint white track, like
+     * the play button.
+     */
+    public static void miniPlayerSpinner(Modifier modifier, long color, float strokeWidth, long trackColor,
+                                         int strokeCap, Object composer, int changed, int defaults) {
+        if (hidePlayButtonCircle()) {
+            color = ComposeCompat.color(0xFFFFFFFF);
+            trackColor = ComposeCompat.color(0x33FFFFFF);
+        }
+        ComposeCompat.circularProgressIndicator(modifier, color, strokeWidth, trackColor, strokeCap,
+                composer, changed, defaults);
+    }
+
+    private static boolean hidePlayButtonCircle() {
+        return GlassworksSettings.isPillBarEnabled() && !GlassworksSettings.isPlayButtonCircle();
+    }
+
     private static boolean isCompactMiniPlayer() {
         return GlassworksSettings.isPillBarEnabled() && GlassworksSettings.isCompactMiniPlayer();
     }

@@ -22,6 +22,8 @@ final class ComposeCompat {
 
     private static final String BACKGROUND_KT = "androidx.compose.foundation.BackgroundKt";
     private static final String PADDING_KT = "androidx.compose.foundation.layout.PaddingKt";
+    private static final String PROGRESS_KT = "androidx.compose.material3.ProgressIndicatorKt";
+    private static final String COMPOSER = "androidx.compose.runtime.Composer";
     private static final String OFFSET_KT = "androidx.compose.foundation.layout.OffsetKt";
     private static final String SIZE_KT = "androidx.compose.foundation.layout.SizeKt";
     private static final String SHAPE_KT = "androidx.compose.foundation.shape.RoundedCornerShapeKt";
@@ -62,6 +64,50 @@ final class ComposeCompat {
         Method method = find(PADDING_KT, "padding-qDBjuR0$default", Modifier.class,
                 float.class, float.class, float.class, float.class, int.class, Object.class);
         return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp, 0, null);
+    }
+
+    /** A Compose {@code Color} as its packed long, from an ARGB int (sRGB). */
+    static long color(int argb) {
+        return (argb & 0xFFFFFFFFL) << 32;
+    }
+
+    /** Compose's {@code CircleShape}, or null if it cannot be found. */
+    static Shape circleShape() {
+        Method method = find(SHAPE_KT, "getCircleShape");
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (Shape) method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: getCircleShape", e);
+            return null;
+        }
+    }
+
+    /**
+     * Material 3's {@code CircularProgressIndicator(modifier, color, strokeWidth, trackColor,
+     * strokeCap)}, a composable: {@code composer}, {@code changed} and {@code defaults} are passed
+     * through from the original call.
+     */
+    static void circularProgressIndicator(Modifier modifier, long color, float strokeWidth, long trackColor,
+                                          int strokeCap, Object composer, int changed, int defaults) {
+        Method method;
+        try {
+            method = find(PROGRESS_KT, "CircularProgressIndicator-LxG7B9w", Modifier.class, long.class,
+                    float.class, long.class, int.class, Class.forName(COMPOSER), int.class, int.class);
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "Composer class not found", e);
+            return;
+        }
+        if (method == null) {
+            return;
+        }
+        try {
+            method.invoke(null, modifier, color, strokeWidth, trackColor, strokeCap, composer, changed, defaults);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: CircularProgressIndicator", e);
+        }
     }
 
     /** {@code modifier.padding(start, top, end, bottom)} in dp, applied even when all are 0. */
