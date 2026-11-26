@@ -162,16 +162,7 @@ final class GlassworksSettingsScreen {
     /** Main page: one row per category. Add a row here for each new patch area. */
     private void buildMain() {
         if (Features.navigationBar()) {
-            categoryRow("Navigation bar", () -> {
-                switch (GlassworksSettings.getBarStyle()) {
-                    case GlassworksSettings.STYLE_TWO_PILLS:
-                        return "Frosted pills";
-                    case GlassworksSettings.STYLE_ONE_PILL:
-                        return "Frosted pill";
-                    default:
-                        return "TIDAL's original bar";
-                }
-            }, () -> openPage("Navigation bar", GlassworksSettingsScreen::buildNavigationBar));
+            categoryRow("Navigation bar", null, () -> openPage("Navigation bar", GlassworksSettingsScreen::buildNavigationBar));
         }
 
         if (Features.lastFm()) {
@@ -730,15 +721,18 @@ final class GlassworksSettingsScreen {
         return texts;
     }
 
+    /** A row that opens a page. {@code summary} may be null for a row with only a title. */
     private void categoryRow(String title, StringGetter summary, Runnable onClick) {
         LinearLayout row = rowContainer(LinearLayout.HORIZONTAL);
         TextView[] summaryView = new TextView[1];
-        row.addView(texts(title, "", summaryView),
+        row.addView(texts(title, summary == null ? null : "", summaryView),
                 new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         row.setBackground(ripple());
         row.setOnClickListener(v -> onClick.run());
-        refreshers.add(() -> summaryView[0].setText(summary.get()));
-        summaryView[0].setText(summary.get());
+        if (summary != null) {
+            refreshers.add(() -> summaryView[0].setText(summary.get()));
+            summaryView[0].setText(summary.get());
+        }
         content.addView(row);
     }
 
