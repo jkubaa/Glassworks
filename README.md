@@ -13,16 +13,16 @@ project. These patches do not unlock paid features or bypass DRM.
 
 ### How to use these patches
 
-Click the button below, or manually add this repo url to Morphe Manager: https://github.com/jkubaa/glassworks-patches
+Click the button below, or manually add this repo url to Morphe Manager: https://github.com/jkubaa/Glassworks
 
-<a href="https://morphe.software/add-source?github=jkubaa/glassworks-patches">
+<a href="https://morphe.software/add-source?github=jkubaa/Glassworks">
   <img src=".github/assets/add-to-morphe.svg" alt="Add to Morphe" height="48">
 </a>
 
 ## 🩹 Patches list
 
 <!-- PATCHES_START -->
-> **[v1.0.0-dev.2](https://github.com/jkubaa/glassworks-patches/releases/tag/v1.0.0-dev.2)**&nbsp;&nbsp;&middot;&nbsp;&nbsp;`dev`&nbsp;&nbsp;&middot;&nbsp;&nbsp;**1 patch** across **1 app**&nbsp;&nbsp;&middot;&nbsp;&nbsp;[Full details](PATCHES.md)
+> **[v1.0.0-dev.2](https://github.com/jkubaa/Glassworks/releases/tag/v1.0.0-dev.2)**&nbsp;&nbsp;&middot;&nbsp;&nbsp;`dev`&nbsp;&nbsp;&middot;&nbsp;&nbsp;**1 patch** across **1 app**&nbsp;&nbsp;&middot;&nbsp;&nbsp;[Full details](PATCHES.md)
 
 | # | App | Patches | Version | Package |
 |---|---|---|---|---|

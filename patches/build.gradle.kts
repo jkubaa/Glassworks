@@ -16,10 +16,10 @@ patches {
     about {
         name = "Glassworks Patches"
         description = "Unofficial Morphe patches that add features to Android apps and change how they look"
-        source = "git@github.com:jkubaa/glassworks-patches.git"
+        source = "git@github.com:jkubaa/Glassworks.git"
         author = "jkubaa"
-        contact = "https://github.com/jkubaa/glassworks-patches/issues"
-        website = "https://github.com/jkubaa/glassworks-patches"
+        contact = "https://github.com/jkubaa/Glassworks/issues"
+        website = "https://github.com/jkubaa/Glassworks"
         license = "GPLv3"
     }
 }

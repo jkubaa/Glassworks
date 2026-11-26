@@ -1,1 +1,1 @@
-// Root build configuration for glassworks-patches
+// Root build configuration for Glassworks
