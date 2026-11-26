@@ -82,3 +82,17 @@ private fun MutableMethod.invokeSmali(index: Int, opcode: String, target: String
 
 private fun FiveRegisterInstruction.registers() =
     listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+
+/**
+ * Makes the method return [value] immediately. For methods returning boolean, such as the
+ * extension's feature flags.
+ */
+fun MutableMethod.returnEarly(value: Boolean) {
+    addInstructions(
+        0,
+        """
+            const/4 v0, ${if (value) "0x1" else "0x0"}
+            return v0
+        """,
+    )
+}
