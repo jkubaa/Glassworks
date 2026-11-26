@@ -22,6 +22,8 @@ final class ComposeCompat {
 
     private static final String BACKGROUND_KT = "androidx.compose.foundation.BackgroundKt";
     private static final String PADDING_KT = "androidx.compose.foundation.layout.PaddingKt";
+    private static final String SIZE_KT = "androidx.compose.foundation.layout.SizeKt";
+    private static final String SHAPE_KT = "androidx.compose.foundation.shape.RoundedCornerShapeKt";
 
     /** Cached lookups. A null value means the lookup failed and will not be retried. */
     private static final Map<String, Method> METHODS = new HashMap<>();
@@ -46,14 +48,40 @@ final class ComposeCompat {
 
     /** {@code modifier.padding(bottom = bottomDp.dp)}. */
     static Modifier paddingBottom(Modifier modifier, float bottomDp) {
-        if (bottomDp <= 0f) {
+        return padding(modifier, 0f, 0f, 0f, bottomDp);
+    }
+
+    /** {@code modifier.padding(start, top, end, bottom)}, all in dp. */
+    static Modifier padding(Modifier modifier, float startDp, float topDp, float endDp, float bottomDp) {
+        if (startDp <= 0f && topDp <= 0f && endDp <= 0f && bottomDp <= 0f) {
             return modifier;
         }
         // padding(start, top, end, bottom) with default arguments. All four are passed,
         // so the defaults mask is 0.
         Method method = find(PADDING_KT, "padding-qDBjuR0$default", Modifier.class,
                 float.class, float.class, float.class, float.class, int.class, Object.class);
-        return invoke(method, modifier, modifier, 0f, 0f, 0f, bottomDp, 0, null);
+        return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp, 0, null);
+    }
+
+    /** {@code modifier.width(widthDp.dp)}. */
+    static Modifier width(Modifier modifier, float widthDp) {
+        Method method = find(SIZE_KT, "width-3ABfNKs", Modifier.class, float.class);
+        return invoke(method, modifier, modifier, widthDp);
+    }
+
+    /** {@code RoundedCornerShape(radiusDp.dp)}, or null if it cannot be created. */
+    static Shape roundedCornerShape(float radiusDp) {
+        String key = SHAPE_KT + ".RoundedCornerShape-0680j_4";
+        Method method = find(SHAPE_KT, "RoundedCornerShape-0680j_4", float.class);
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (Shape) method.invoke(null, radiusDp);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: " + key, e);
+            return null;
+        }
     }
 
     private static synchronized Method find(String className, String name, Class<?>... parameters) {

@@ -14,13 +14,20 @@ import app.glassworks.extension.tidal.settings.GlassworksSettings;
 /**
  * Entry points called from bytecode injected into TIDAL's AppScaffold and TabBar composables.
  * <p>
- * TIDAL draws the mini player and the tab bar on one shared rounded card. With the pill bar
- * enabled, the card's background, clip and black gradient are skipped, and the mini player and
- * the tab bar each get their own frosted pill. With it disabled, every call does exactly what
- * TIDAL's original code did.
+ * TIDAL draws the mini player and the tab bar on one shared rounded card. Depending on the bar
+ * style setting:
+ * <ul>
+ * <li>Two pills: the card's background, clip and black gradient are skipped, and the mini player
+ * and the tab bar each get their own frosted pill.</li>
+ * <li>One pill: the card's solid background is replaced with a frosted one.</li>
+ * <li>Original: every call does exactly what TIDAL's original code did.</li>
+ * </ul>
  */
 @SuppressWarnings("unused")
 public final class FrostedPillPatch {
+
+    /** Corner radius of the one-pill card at 100% roundness, in dp (half the tab bar height). */
+    private static final float CARD_MAX_RADIUS_DP = 28f;
 
     /**
      * Modifiers this class already returned. TabBar's restart lambda passes its (already wrapped)
@@ -36,10 +43,12 @@ public final class FrostedPillPatch {
      * Injected at the start of the TabBar row composable, wrapping its {@code modifier} parameter.
      */
     public static Modifier tabBarModifier(Modifier modifier) {
-        if (!GlassworksSettings.isPillBarEnabled() || modifier == null || WRAPPED.contains(modifier)) {
+        if (!GlassworksSettings.isTwoPills() || modifier == null || WRAPPED.contains(modifier)) {
             return modifier;
         }
-        return remember(modifier.then(FrostedPillElement.INSTANCE));
+        int side = GlassworksSettings.getSideMarginDp();
+        Modifier withMargins = ComposeCompat.padding(modifier, side, 0f, side, GlassworksSettings.getLiftDp());
+        return remember(withMargins.then(FrostedPillElement.TAB_BAR));
     }
 
     /**
@@ -47,11 +56,12 @@ public final class FrostedPillPatch {
      * modifier. The gap is padding below the pill, so it only exists while the mini player shows.
      */
     public static Modifier miniPlayerModifier(Modifier modifier) {
-        if (!GlassworksSettings.isPillBarEnabled() || modifier == null || WRAPPED.contains(modifier)) {
+        if (!GlassworksSettings.isTwoPills() || modifier == null || WRAPPED.contains(modifier)) {
             return modifier;
         }
-        Modifier withGap = ComposeCompat.paddingBottom(modifier, GlassworksSettings.getPillGapDp());
-        return remember(withGap.then(FrostedPillElement.INSTANCE));
+        int side = GlassworksSettings.getSideMarginDp();
+        Modifier withGap = ComposeCompat.padding(modifier, side, 0f, side, GlassworksSettings.getPillGapDp());
+        return remember(withGap.then(FrostedPillElement.MINI_PLAYER));
     }
 
     /**
@@ -70,20 +80,37 @@ public final class FrostedPillPatch {
      * Replaces {@code Modifier.background(color, shape)} of the shared card.
      */
     public static Modifier cardBackground(Modifier modifier, long color, Shape shape) {
-        if (GlassworksSettings.isPillBarEnabled()) {
-            return modifier;
+        switch (GlassworksSettings.getBarStyle()) {
+            case GlassworksSettings.STYLE_TWO_PILLS:
+                return modifier;
+            case GlassworksSettings.STYLE_ONE_PILL:
+                int side = GlassworksSettings.getSideMarginDp();
+                return ComposeCompat.padding(modifier, side, 0f, side, GlassworksSettings.getLiftDp())
+                        .then(FrostedPillElement.CARD);
+            default:
+                return ComposeCompat.background(modifier, color, shape);
         }
-        return ComposeCompat.background(modifier, color, shape);
     }
 
     /**
-     * Replaces {@code Modifier.clip(shape)} of the shared card, so it does not cut the pills' edges.
+     * Replaces {@code Modifier.clip(shape)} of the shared card. With two pills it is skipped so it
+     * does not cut the pills' edges; with one pill it matches the pill's corner radius.
      */
     public static Modifier cardClip(Modifier modifier, Shape shape) {
-        if (GlassworksSettings.isPillBarEnabled()) {
-            return modifier;
+        switch (GlassworksSettings.getBarStyle()) {
+            case GlassworksSettings.STYLE_TWO_PILLS:
+                return modifier;
+            case GlassworksSettings.STYLE_ONE_PILL:
+                Shape rounded = ComposeCompat.roundedCornerShape(getCardRadiusDp());
+                return ClipKt.clip(modifier, rounded != null ? rounded : shape);
+            default:
+                return ClipKt.clip(modifier, shape);
         }
-        return ClipKt.clip(modifier, shape);
+    }
+
+    /** Corner radius of the one-pill card, in dp. */
+    static float getCardRadiusDp() {
+        return CARD_MAX_RADIUS_DP * GlassworksSettings.getRoundnessPercent() / 100f;
     }
 
     private static Modifier remember(Modifier wrapped) {

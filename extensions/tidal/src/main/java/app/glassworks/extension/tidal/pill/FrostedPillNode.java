@@ -20,8 +20,11 @@ import androidx.compose.ui.node.GlobalPositionAwareModifierNode;
 import app.glassworks.extension.tidal.settings.GlassworksSettings;
 
 /**
- * Draws a fully rounded, frosted-glass pill behind the content it modifies:
+ * Draws a rounded, frosted-glass pill behind the content it modifies:
  * the blurred screen content behind it, a translucent tint and a hairline edge.
+ * <p>
+ * A tab bar pill with a separate tab is drawn as two shapes: the remaining tabs on the left
+ * and a round pill on the right, sized to the bar height (see {@link TabBarHook}).
  * <p>
  * Only Compose APIs without Kotlin lambda or Unit types in their JVM signature are used,
  * because TIDAL's R8 renamed those Kotlin classes.
@@ -29,8 +32,6 @@ import app.glassworks.extension.tidal.settings.GlassworksSettings;
 final class FrostedPillNode extends Modifier.Node
         implements DrawModifierNode, GlobalPositionAwareModifierNode {
 
-    /** Tint color (#1C1C1E). Its opacity comes from the settings. */
-    private static final int TINT_RGB = 0x1C1C1E;
     /** Minimum tint opacity when no blur can be drawn, such as on a software canvas. */
     private static final int MIN_ALPHA_WITHOUT_BLUR = 0xF2;
     /** Hairline edge highlight (white at 14%). */
@@ -42,10 +43,14 @@ final class FrostedPillNode extends Modifier.Node
     private final int[] hostLocation = new int[2];
     private final int[] sourceLocation = new int[2];
 
+    private final int kind;
+
     private View host;
     private Backdrop backdrop;
+    private float density = 1f;
 
-    FrostedPillNode() {
+    FrostedPillNode(int kind) {
+        this.kind = kind;
         tintPaint.setStyle(Paint.Style.FILL);
         edgePaint.setStyle(Paint.Style.STROKE);
         edgePaint.setColor(EDGE_COLOR);
@@ -55,7 +60,8 @@ final class FrostedPillNode extends Modifier.Node
     public void onAttach() {
         host = DelegatableNode_androidKt.requireView(this);
         backdrop = Backdrop.acquire(host);
-        edgePaint.setStrokeWidth(host.getResources().getDisplayMetrics().density);
+        density = host.getResources().getDisplayMetrics().density;
+        edgePaint.setStrokeWidth(density);
     }
 
     @Override
@@ -89,9 +95,21 @@ final class FrostedPillNode extends Modifier.Node
             return;
         }
 
-        float radius = Math.min(width, height) / 2f;
+        float roundness = GlassworksSettings.getRoundnessPercent() / 100f;
+        float radius = kind == FrostedPillElement.KIND_CARD
+                ? Math.min(FrostedPillPatch.getCardRadiusDp() * density, Math.min(width, height) / 2f)
+                : roundness * Math.min(width, height) / 2f;
         path.reset();
-        path.addRoundRect(0f, 0f, width, height, radius, radius, Path.Direction.CW);
+        if (kind == FrostedPillElement.KIND_TAB_BAR && TabBarHook.isSplitActive() && width > height * 2) {
+            // Left pill for the other tabs, round pill on the right for the separate tab.
+            float gap = TabBarHook.getSplitGapDp() * density;
+            float circleLeft = width - height;
+            float circleRadius = roundness * height / 2f;
+            path.addRoundRect(0f, 0f, circleLeft - gap, height, radius, radius, Path.Direction.CW);
+            path.addRoundRect(circleLeft, 0f, width, height, circleRadius, circleRadius, Path.Direction.CW);
+        } else {
+            path.addRoundRect(0f, 0f, width, height, radius, radius, Path.Direction.CW);
+        }
 
         boolean blurred = drawBackdrop(canvas, bounds);
 
@@ -99,7 +117,7 @@ final class FrostedPillNode extends Modifier.Node
         if (!blurred) {
             alpha = Math.max(alpha, MIN_ALPHA_WITHOUT_BLUR);
         }
-        tintPaint.setColor((alpha << 24) | TINT_RGB);
+        tintPaint.setColor((alpha << 24) | GlassworksSettings.getTintRgb());
         canvas.drawPath(path, tintPaint);
 
         if (GlassworksSettings.isEdgeHighlightEnabled()) {

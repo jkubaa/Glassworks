@@ -11,28 +11,70 @@ import android.content.SharedPreferences;
  */
 public final class GlassworksSettings {
 
+    // region Navigation bar
+
+    /** Bar styles. Stored as two booleans so settings from earlier versions keep working. */
+    public static final int STYLE_ORIGINAL = 0;
+    public static final int STYLE_TWO_PILLS = 1;
+    public static final int STYLE_ONE_PILL = 2;
+
     public static final boolean DEFAULT_PILL_BAR = true;
+    public static final boolean DEFAULT_SINGLE_PILL = false;
     public static final int DEFAULT_PILL_GAP_DP = 10;
+    public static final int DEFAULT_ROUNDNESS_PERCENT = 100;
+    public static final int DEFAULT_SIDE_MARGIN_DP = 0;
+    public static final int DEFAULT_LIFT_DP = 0;
+    public static final int DEFAULT_TINT_COLOR = 0;
     public static final int DEFAULT_TINT_PERCENT = 55;
     public static final int DEFAULT_BLUR_DP = 24;
     public static final int DEFAULT_SATURATION_PERCENT = 160;
     public static final boolean DEFAULT_EDGE_HIGHLIGHT = true;
+    public static final String DEFAULT_SEPARATE_TAB = "";
 
     public static final int MAX_PILL_GAP_DP = 32;
+    public static final int MAX_SIDE_MARGIN_DP = 48;
+    public static final int MAX_LIFT_DP = 32;
     public static final int MAX_BLUR_DP = 60;
     public static final int MIN_SATURATION_PERCENT = 50;
     public static final int MAX_SATURATION_PERCENT = 250;
+
+    /** Tint color presets: names shown in settings and their RGB values. */
+    public static final String[] TINT_COLOR_NAMES = {
+            "Graphite", "Black", "Midnight", "Ocean", "Plum", "Wine", "Forest",
+    };
+    public static final int[] TINT_COLORS = {
+            0x1C1C1E, 0x000000, 0x0B1A33, 0x053841, 0x2A1236, 0x3A0D18, 0x0F2A1A,
+    };
+
+    /** TIDAL's tab names ({@code TabBarContract$TabType}) and the labels shown in settings. */
+    public static final String[] TAB_NAMES = {"HOME", "FEED", "SEARCH", "COLLECTION", "UPLOADS"};
+    public static final String[] TAB_LABELS = {"Home", "Activity", "Search", "My collection", "Upload"};
+
+    // endregion
 
     // Keeps the name from before the project was renamed to Glassworks,
     // so settings saved by earlier versions are not lost.
     private static final String PREFERENCES_NAME = "tideglass";
 
     static final String KEY_PILL_BAR = "pill_bar";
+    static final String KEY_SINGLE_PILL = "single_pill";
     static final String KEY_PILL_GAP_DP = "pill_gap_dp";
+    static final String KEY_ROUNDNESS_PERCENT = "roundness_percent";
+    static final String KEY_SIDE_MARGIN_DP = "side_margin_dp";
+    static final String KEY_LIFT_DP = "lift_dp";
+    static final String KEY_TINT_COLOR = "tint_color";
     static final String KEY_TINT_PERCENT = "tint_percent";
     static final String KEY_BLUR_DP = "blur_dp";
     static final String KEY_SATURATION_PERCENT = "saturation_percent";
     static final String KEY_EDGE_HIGHLIGHT = "edge_highlight";
+    static final String KEY_SEPARATE_TAB = "separate_tab";
+    static final String KEY_HIDDEN_TAB_PREFIX = "hide_tab_";
+
+    private static final String[] NAVIGATION_BAR_KEYS = {
+            KEY_PILL_BAR, KEY_SINGLE_PILL, KEY_PILL_GAP_DP, KEY_ROUNDNESS_PERCENT, KEY_SIDE_MARGIN_DP,
+            KEY_LIFT_DP, KEY_TINT_COLOR, KEY_TINT_PERCENT, KEY_BLUR_DP, KEY_SATURATION_PERCENT,
+            KEY_EDGE_HIGHLIGHT, KEY_SEPARATE_TAB,
+    };
 
     private static volatile SharedPreferences preferences;
 
@@ -46,9 +88,27 @@ public final class GlassworksSettings {
         }
     }
 
-    /** Whether the frosted pill bar is used instead of TIDAL's original bar. */
+    // region Navigation bar getters
+
+    /** One of {@link #STYLE_ORIGINAL}, {@link #STYLE_TWO_PILLS} or {@link #STYLE_ONE_PILL}. */
+    public static int getBarStyle() {
+        if (!getBoolean(KEY_PILL_BAR, DEFAULT_PILL_BAR)) {
+            return STYLE_ORIGINAL;
+        }
+        return getBoolean(KEY_SINGLE_PILL, DEFAULT_SINGLE_PILL) ? STYLE_ONE_PILL : STYLE_TWO_PILLS;
+    }
+
+    /** Whether a frosted style (one or two pills) is used instead of TIDAL's original bar. */
     public static boolean isPillBarEnabled() {
-        return getBoolean(KEY_PILL_BAR, DEFAULT_PILL_BAR);
+        return getBarStyle() != STYLE_ORIGINAL;
+    }
+
+    public static boolean isTwoPills() {
+        return getBarStyle() == STYLE_TWO_PILLS;
+    }
+
+    public static boolean isOnePill() {
+        return getBarStyle() == STYLE_ONE_PILL;
     }
 
     /** Space between the mini player pill and the tab bar pill, in dp. */
@@ -56,7 +116,32 @@ public final class GlassworksSettings {
         return clamp(getInt(KEY_PILL_GAP_DP, DEFAULT_PILL_GAP_DP), 0, MAX_PILL_GAP_DP);
     }
 
-    /** Opacity of the dark tint over the blur, in percent. */
+    /** Corner roundness in percent: 100 is a full pill, 0 a rectangle. */
+    public static int getRoundnessPercent() {
+        return clamp(getInt(KEY_ROUNDNESS_PERCENT, DEFAULT_ROUNDNESS_PERCENT), 0, 100);
+    }
+
+    /** Extra space at the left and right of the bar, in dp. */
+    public static int getSideMarginDp() {
+        return clamp(getInt(KEY_SIDE_MARGIN_DP, DEFAULT_SIDE_MARGIN_DP), 0, MAX_SIDE_MARGIN_DP);
+    }
+
+    /** Extra space below the bar, in dp. */
+    public static int getLiftDp() {
+        return clamp(getInt(KEY_LIFT_DP, DEFAULT_LIFT_DP), 0, MAX_LIFT_DP);
+    }
+
+    /** Index into {@link #TINT_COLORS}. */
+    public static int getTintColorIndex() {
+        return clamp(getInt(KEY_TINT_COLOR, DEFAULT_TINT_COLOR), 0, TINT_COLORS.length - 1);
+    }
+
+    /** Tint color as RGB, without alpha. */
+    public static int getTintRgb() {
+        return TINT_COLORS[getTintColorIndex()];
+    }
+
+    /** Opacity of the tint over the blur, in percent. */
     public static int getTintPercent() {
         return clamp(getInt(KEY_TINT_PERCENT, DEFAULT_TINT_PERCENT), 0, 100);
     }
@@ -77,6 +162,20 @@ public final class GlassworksSettings {
         return getBoolean(KEY_EDGE_HIGHLIGHT, DEFAULT_EDGE_HIGHLIGHT);
     }
 
+    /** Name of the tab shown in its own pill at the right of the tab bar, or "" for none. */
+    public static String getSeparateTab() {
+        return getString(KEY_SEPARATE_TAB, DEFAULT_SEPARATE_TAB);
+    }
+
+    /** Whether the tab with this {@code TabBarContract$TabType} name is hidden. */
+    public static boolean isTabHidden(String tabName) {
+        return getBoolean(KEY_HIDDEN_TAB_PREFIX + tabName, false);
+    }
+
+    // endregion
+
+    // region Storage
+
     static void putBoolean(String key, boolean value) {
         SharedPreferences prefs = preferences;
         if (prefs != null) {
@@ -91,32 +190,65 @@ public final class GlassworksSettings {
         }
     }
 
-    /** Resets only the navigation bar settings, leaving other categories untouched. */
-    static void resetNavigationBar() {
+    public static void putString(String key, String value) {
+        SharedPreferences prefs = preferences;
+        if (prefs != null) {
+            if (value == null) {
+                prefs.edit().remove(key).apply();
+            } else {
+                prefs.edit().putString(key, value).apply();
+            }
+        }
+    }
+
+    static void putBarStyle(int style) {
         SharedPreferences prefs = preferences;
         if (prefs != null) {
             prefs.edit()
-                    .remove(KEY_PILL_BAR)
-                    .remove(KEY_PILL_GAP_DP)
-                    .remove(KEY_TINT_PERCENT)
-                    .remove(KEY_BLUR_DP)
-                    .remove(KEY_SATURATION_PERCENT)
-                    .remove(KEY_EDGE_HIGHLIGHT)
+                    .putBoolean(KEY_PILL_BAR, style != STYLE_ORIGINAL)
+                    .putBoolean(KEY_SINGLE_PILL, style == STYLE_ONE_PILL)
                     .apply();
         }
     }
 
-    private static boolean getBoolean(String key, boolean defaultValue) {
+    /** Resets only the navigation bar settings, leaving other categories untouched. */
+    static void resetNavigationBar() {
+        SharedPreferences prefs = preferences;
+        if (prefs != null) {
+            SharedPreferences.Editor editor = prefs.edit();
+            for (String key : NAVIGATION_BAR_KEYS) {
+                editor.remove(key);
+            }
+            for (String tab : TAB_NAMES) {
+                editor.remove(KEY_HIDDEN_TAB_PREFIX + tab);
+            }
+            editor.apply();
+        }
+    }
+
+    public static boolean getBoolean(String key, boolean defaultValue) {
         SharedPreferences prefs = preferences;
         return prefs == null ? defaultValue : prefs.getBoolean(key, defaultValue);
     }
 
-    private static int getInt(String key, int defaultValue) {
+    public static int getInt(String key, int defaultValue) {
         SharedPreferences prefs = preferences;
         return prefs == null ? defaultValue : prefs.getInt(key, defaultValue);
     }
 
-    private static int clamp(int value, int min, int max) {
+    public static String getString(String key, String defaultValue) {
+        SharedPreferences prefs = preferences;
+        return prefs == null ? defaultValue : prefs.getString(key, defaultValue);
+    }
+
+    /** The preferences, or null before {@link #init(Context)}. */
+    public static SharedPreferences getPreferences() {
+        return preferences;
+    }
+
+    static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
     }
+
+    // endregion
 }
