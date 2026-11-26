@@ -128,3 +128,22 @@ internal object NavigationBarFeatureFingerprint : Fingerprint(
     returnType = "Z",
     parameters = listOf(),
 )
+
+/**
+ * The MiniPlayer row composable. It creates the artwork's rounded corner shape once, with
+ * `RoundedCornerShape(radius.dp)`, and uses it for the artwork's background, border and clip.
+ */
+internal object MiniPlayerRowFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(
+        string(
+            "com.tidal.android.feature.appscaffold.ui.composable.MiniPlayer (MiniPlayer.kt:",
+            StringComparisonType.STARTS_WITH,
+        ),
+        methodCall(
+            definingClass = "Landroidx/compose/foundation/shape/RoundedCornerShapeKt;",
+            name = "RoundedCornerShape-0680j_4",
+            parameters = listOf("F"),
+        ),
+    ),
+)

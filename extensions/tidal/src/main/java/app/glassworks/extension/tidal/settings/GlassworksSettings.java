@@ -50,6 +50,12 @@ public final class GlassworksSettings {
     };
     public static final int TINT_ALBUM_ART = 1;
 
+    /** Mini player artwork shapes. */
+    public static final int ARTWORK_TIDAL = 0;
+    public static final int ARTWORK_ROUNDED = 1;
+    public static final int ARTWORK_CIRCLE = 2;
+    public static final int DEFAULT_ARTWORK_SHAPE = ARTWORK_ROUNDED;
+
     /** Glass styles. */
     public static final int GLASS_FROSTED = 0;
     public static final int GLASS_LIQUID = 1;
@@ -80,11 +86,13 @@ public final class GlassworksSettings {
     static final String KEY_TAB_ORDER = "tab_order";
     static final String KEY_GLASS_STYLE = "glass_style";
     static final String KEY_SHADOW_PERCENT = "shadow_percent";
+    static final String KEY_ARTWORK_SHAPE = "artwork_shape";
 
     private static final String[] NAVIGATION_BAR_KEYS = {
             KEY_PILL_BAR, KEY_SINGLE_PILL, KEY_PILL_GAP_DP, KEY_ROUNDNESS_PERCENT, KEY_SIDE_MARGIN_DP,
             KEY_LIFT_DP, KEY_TINT_COLOR, KEY_TINT_PERCENT, KEY_BLUR_DP, KEY_SATURATION_PERCENT,
             KEY_EDGE_HIGHLIGHT, KEY_SEPARATE_TAB, KEY_TAB_ORDER, KEY_GLASS_STYLE, KEY_SHADOW_PERCENT,
+            KEY_ARTWORK_SHAPE,
     };
 
     private static volatile SharedPreferences preferences;
@@ -153,6 +161,11 @@ public final class GlassworksSettings {
     public static int getTintRgb() {
         int rgb = TINT_COLORS[getTintColorIndex()];
         return rgb < 0 ? TINT_COLORS[0] : rgb;
+    }
+
+    /** {@link #ARTWORK_TIDAL}, {@link #ARTWORK_ROUNDED} or {@link #ARTWORK_CIRCLE}. */
+    public static int getArtworkShape() {
+        return clamp(getInt(KEY_ARTWORK_SHAPE, DEFAULT_ARTWORK_SHAPE), ARTWORK_TIDAL, ARTWORK_CIRCLE);
     }
 
     /** {@link #GLASS_FROSTED} or {@link #GLASS_LIQUID}. */

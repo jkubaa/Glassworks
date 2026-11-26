@@ -125,6 +125,33 @@ public final class FrostedPillPatch {
         FrostedPillNode.invalidateAll();
     }
 
+    /**
+     * Replaces the mini player artwork's corner shape (a {@code RoundedCornerShape}) with the
+     * one chosen in settings, while a frosted style is used.
+     */
+    public static Object artworkShape(Object original) {
+        if (!GlassworksSettings.isPillBarEnabled()) {
+            return original;
+        }
+        Shape shape;
+        switch (GlassworksSettings.getArtworkShape()) {
+            case GlassworksSettings.ARTWORK_ROUNDED:
+                shape = ComposeCompat.roundedCornerShape(getArtworkRadiusDp());
+                break;
+            case GlassworksSettings.ARTWORK_CIRCLE:
+                shape = ComposeCompat.roundedCornerShapePercent(50);
+                break;
+            default:
+                return original;
+        }
+        return shape != null ? shape : original;
+    }
+
+    /** Corner radius of the "Rounded" artwork shape: up to 12dp, following the pill's roundness. */
+    static float getArtworkRadiusDp() {
+        return 4f + 8f * GlassworksSettings.getRoundnessPercent() / 100f;
+    }
+
     /** Corner radius of the one-pill card, in dp. */
     static float getCardRadiusDp() {
         return CARD_MAX_RADIUS_DP * GlassworksSettings.getRoundnessPercent() / 100f;

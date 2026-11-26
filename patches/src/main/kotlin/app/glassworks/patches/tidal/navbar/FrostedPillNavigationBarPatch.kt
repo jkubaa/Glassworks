@@ -77,6 +77,24 @@ val frostedPillNavigationBarPatch = bytecodePatch(
 
         NavigationBarFeatureFingerprint.method.returnEarly(true)
 
+        // Replace the mini player artwork's corner shape with the one from the settings.
+        MiniPlayerRowFingerprint.let {
+            val method = it.method
+            val shapeResultIndex = it.instructionMatches.last().index + 1
+            if (method.getInstruction(shapeResultIndex).opcode != Opcode.MOVE_RESULT_OBJECT) {
+                throw PatchException("No result for the artwork shape in the MiniPlayer composable")
+            }
+            val register = method.getInstruction<OneRegisterInstruction>(shapeResultIndex).registerA
+            method.addInstructions(
+                shapeResultIndex + 1,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION_CLASS->artworkShape(Ljava/lang/Object;)Ljava/lang/Object;
+                    move-result-object v$register
+                    check-cast v$register, Landroidx/compose/foundation/shape/RoundedCornerShape;
+                """,
+            )
+        }
+
         // Hide tabs and move the separate tab last: filter each list of tab types TIDAL builds
         // (listOf(...) calls, one per tab order).
         TabBarContentFingerprint.method.apply {

@@ -150,8 +150,19 @@ public final class GlassPreview extends View {
         float pad = 10f * density;
         float art = height - 2 * pad;
         paint.setColor(0xFFE85D75);
+        float artRadius;
+        int artShape = GlassworksSettings.isPillBarEnabled()
+                ? GlassworksSettings.getArtworkShape() : GlassworksSettings.ARTWORK_TIDAL;
+        if (artShape == GlassworksSettings.ARTWORK_CIRCLE) {
+            artRadius = art / 2f;
+        } else if (artShape == GlassworksSettings.ARTWORK_ROUNDED) {
+            // Scaled from the real 44dp artwork to the preview's size.
+            artRadius = FrostedPillPatch.getArtworkRadiusDp() * density * art / (44f * density);
+        } else {
+            artRadius = 4 * density;
+        }
         canvas.drawRoundRect(left + pad + 4 * density, top + pad, left + pad + 4 * density + art, top + pad + art,
-                4 * density, 4 * density, paint);
+                artRadius, artRadius, paint);
         float textLeft = left + pad + art + 18f * density;
         paint.setColor(0xFFFFFFFF);
         canvas.drawRoundRect(textLeft, top + height * 0.32f, textLeft + 90f * density, top + height * 0.32f + 7f * density,

@@ -76,6 +76,20 @@ final class ComposeCompat {
         return invoke(method, modifier, modifier, widthDp);
     }
 
+    /** {@code RoundedCornerShape(percent)} (50 is a circle), or null if it cannot be created. */
+    static Shape roundedCornerShapePercent(int percent) {
+        Method method = find(SHAPE_KT, "RoundedCornerShape", int.class);
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (Shape) method.invoke(null, percent);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: RoundedCornerShape(int)", e);
+            return null;
+        }
+    }
+
     /** {@code RoundedCornerShape(radiusDp.dp)}, or null if it cannot be created. */
     static Shape roundedCornerShape(float radiusDp) {
         String key = SHAPE_KT + ".RoundedCornerShape-0680j_4";

@@ -229,6 +229,12 @@ final class GlassworksSettingsScreen {
                 value -> GlassworksSettings.putInt(GlassworksSettings.KEY_ROUNDNESS_PERCENT, value),
                 pills);
 
+        choiceRow("Artwork shape", new String[]{"TIDAL's", "Rounded", "Circle"},
+                GlassworksSettings::getArtworkShape,
+                index -> GlassworksSettings.putInt(GlassworksSettings.KEY_ARTWORK_SHAPE, index),
+                pills);
+        note("The cover in the mini player. Rounded follows the corner roundness.");
+
         sliderRow("Side margins", "dp", 0, GlassworksSettings.MAX_SIDE_MARGIN_DP,
                 GlassworksSettings::getSideMarginDp,
                 value -> GlassworksSettings.putInt(GlassworksSettings.KEY_SIDE_MARGIN_DP, value),
