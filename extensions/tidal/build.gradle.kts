@@ -1,9 +1,9 @@
 extension {
-    name = "extensions/extension.mpe"
+    name = "extensions/tidal.mpe"
 }
 
 android {
-    namespace = "app.tideglass.extension"
+    namespace = "app.glassworks.extension.tidal"
 
     defaultConfig {
         // TIDAL 2.221.0 requires API 32, and the frosted backdrop uses RenderEffect (API 31).

@@ -1,4 +1,4 @@
-package app.tideglass.patches.shared
+package app.glassworks.patches.tidal.shared
 
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget

@@ -1,4 +1,4 @@
-package app.tideglass.extension.pill;
+package app.glassworks.extension.tidal.pill;
 
 import androidx.compose.ui.node.ModifierNodeElement;
 

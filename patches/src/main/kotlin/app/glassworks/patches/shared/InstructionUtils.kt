@@ -1,4 +1,4 @@
-package app.tideglass.patches.shared
+package app.glassworks.patches.shared
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction

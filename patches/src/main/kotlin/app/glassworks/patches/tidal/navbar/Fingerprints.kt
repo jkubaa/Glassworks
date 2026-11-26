@@ -1,4 +1,4 @@
-package app.tideglass.patches.navbar
+package app.glassworks.patches.tidal.navbar
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.InstructionLocation.MatchAfterWithin

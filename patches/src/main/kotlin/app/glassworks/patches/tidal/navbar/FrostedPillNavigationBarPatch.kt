@@ -1,14 +1,14 @@
-package app.tideglass.patches.navbar
+package app.glassworks.patches.tidal.navbar
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
-import app.tideglass.patches.settings.settingsPatch
-import app.tideglass.patches.shared.Constants.COMPATIBILITY_TIDAL
-import app.tideglass.patches.shared.argumentRegister
-import app.tideglass.patches.shared.insertBeforeKeepingLabels
-import app.tideglass.patches.shared.redirectStaticCall
+import app.glassworks.patches.tidal.settings.settingsPatch
+import app.glassworks.patches.tidal.shared.Constants.COMPATIBILITY_TIDAL
+import app.glassworks.patches.shared.argumentRegister
+import app.glassworks.patches.shared.insertBeforeKeepingLabels
+import app.glassworks.patches.shared.redirectStaticCall
 
-private const val EXTENSION_CLASS = "Lapp/tideglass/extension/pill/FrostedPillPatch;"
+private const val EXTENSION_CLASS = "Lapp/glassworks/extension/tidal/pill/FrostedPillPatch;"
 private const val MODIFIER = "Landroidx/compose/ui/Modifier;"
 private const val SHAPE = "Landroidx/compose/ui/graphics/Shape;"
 private const val WRAP_MODIFIER = "($MODIFIER)$MODIFIER"
@@ -18,14 +18,14 @@ val frostedPillNavigationBarPatch = bytecodePatch(
     name = "Frosted pill navigation bar",
     description = "Splits the bottom bar into a frosted-glass pill for the mini player " +
         "and another for the tabs, with the screen content blurred behind them. " +
-        "Adjust it or switch back to the original bar in Settings > Tideglass.",
+        "Adjust it or switch back to the original bar in Settings > Glassworks.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_TIDAL)
 
     dependsOn(settingsPatch)
 
-    extendWith("extensions/extension.mpe")
+    extendWith("extensions/tidal.mpe")
 
     execute {
         AppScaffoldBottomBarFingerprint.let { fingerprint ->

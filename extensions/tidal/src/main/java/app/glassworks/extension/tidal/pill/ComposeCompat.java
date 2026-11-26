@@ -1,4 +1,4 @@
-package app.tideglass.extension.pill;
+package app.glassworks.extension.tidal.pill;
 
 import android.util.Log;
 
@@ -18,7 +18,7 @@ import java.util.Map;
  */
 final class ComposeCompat {
 
-    private static final String TAG = "Tideglass";
+    private static final String TAG = "Glassworks";
 
     private static final String BACKGROUND_KT = "androidx.compose.foundation.BackgroundKt";
     private static final String PADDING_KT = "androidx.compose.foundation.layout.PaddingKt";

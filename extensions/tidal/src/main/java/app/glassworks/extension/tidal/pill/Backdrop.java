@@ -1,4 +1,4 @@
-package app.tideglass.extension.pill;
+package app.glassworks.extension.tidal.pill;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -17,7 +17,7 @@ import android.view.ViewTreeObserver;
 
 import java.util.WeakHashMap;
 
-import app.tideglass.extension.settings.TideglassSettings;
+import app.glassworks.extension.tidal.settings.GlassworksSettings;
 
 /**
  * A blurred copy of the screen content that sits behind TIDAL's bottom bar.
@@ -33,7 +33,7 @@ final class Backdrop implements ViewTreeObserver.OnPreDrawListener {
     private static final WeakHashMap<View, Backdrop> BACKDROPS = new WeakHashMap<>();
 
     private final View source;
-    private final RenderNode node = new RenderNode("TideglassBackdrop");
+    private final RenderNode node = new RenderNode("GlassworksBackdrop");
     private ViewTreeObserver observer;
     private int users;
     private boolean ready;
@@ -49,10 +49,10 @@ final class Backdrop implements ViewTreeObserver.OnPreDrawListener {
      */
     private static RenderEffect createEffect(View source) {
         ColorMatrix saturation = new ColorMatrix();
-        saturation.setSaturation(TideglassSettings.getSaturationPercent() / 100f);
+        saturation.setSaturation(GlassworksSettings.getSaturationPercent() / 100f);
         ColorMatrixColorFilter saturationFilter = new ColorMatrixColorFilter(saturation);
 
-        float radius = TideglassSettings.getBlurDp() * source.getResources().getDisplayMetrics().density;
+        float radius = GlassworksSettings.getBlurDp() * source.getResources().getDisplayMetrics().density;
         if (radius <= 0f) {
             return RenderEffect.createColorFilterEffect(saturationFilter);
         }

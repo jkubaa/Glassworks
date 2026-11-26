@@ -1,4 +1,4 @@
-package app.tideglass.extension.settings;
+package app.glassworks.extension.tidal.settings;
 
 import android.app.Activity;
 import android.app.Application;
@@ -16,23 +16,23 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 
 /**
- * Adds a "Tideglass" row to TIDAL's main settings page, right below "Appearance".
+ * Adds a "Glassworks" row to TIDAL's main settings page, right below "Appearance".
  * <p>
  * TIDAL's settings rows implement {@code com.aspiro.wamp.settings.a} (not obfuscated) and return
  * a view state whose class and click-callback interface are obfuscated and change between
  * versions. Instead of hard-coding those names, this finds the view state class of an existing
- * navigation row at runtime and builds the Tideglass row from it with {@link Proxy} objects.
+ * navigation row at runtime and builds the Glassworks row from it with {@link Proxy} objects.
  */
 @SuppressWarnings("unused")
 public final class SettingsHook {
 
-    private static final String TAG = "Tideglass";
+    private static final String TAG = "Glassworks";
 
     /** TIDAL's settings item interface: {@code T a()} returns the view state, {@code b()} refreshes it. */
     private static final String SETTINGS_ITEM_INTERFACE = "com.aspiro.wamp.settings.a";
     private static final String MAYBE_CLASS = "io.reactivex.Maybe";
 
-    private static final String ROW_TITLE = "Tideglass";
+    private static final String ROW_TITLE = "Glassworks";
 
     private static WeakReference<Activity> currentActivity = new WeakReference<>(null);
     private static boolean lifecycleCallbacksRegistered;
@@ -48,7 +48,7 @@ public final class SettingsHook {
      * Injected at the start of {@code MainActivity.onCreate}, before any UI is created.
      */
     public static void onMainActivityCreate(Activity activity) {
-        TideglassSettings.init(activity);
+        GlassworksSettings.init(activity);
         currentActivity = new WeakReference<>(activity);
 
         if (!lifecycleCallbacksRegistered) {
@@ -60,7 +60,7 @@ public final class SettingsHook {
     /**
      * Injected before every {@code return} of TIDAL's main settings list provider.
      *
-     * @return The same list with the Tideglass row inserted below "Appearance",
+     * @return The same list with the Glassworks row inserted below "Appearance",
      * or unchanged if anything goes wrong.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -110,7 +110,7 @@ public final class SettingsHook {
 
             items.add(insertAt, getOrCreateItem(itemInterface, viewStateConstructor));
         } catch (Throwable t) {
-            Log.e(TAG, "Failed to add the Tideglass settings row", t);
+            Log.e(TAG, "Failed to add the Glassworks settings row", t);
         }
         return items;
     }
@@ -145,7 +145,7 @@ public final class SettingsHook {
         ClassLoader loader = viewStateClass.getClassLoader();
 
         Object onClick = Proxy.newProxyInstance(loader, new Class<?>[]{onClickInterface},
-                new ProxyHandler("TideglassOnClick") {
+                new ProxyHandler("GlassworksOnClick") {
                     @Override
                     Object onInvoke(Method method, Object[] args) throws ReflectiveOperationException {
                         if (method.getName().equals("invoke") && (args == null || args.length == 0)) {
@@ -161,7 +161,7 @@ public final class SettingsHook {
                 true, true, false, false, onClick);
 
         cachedItem = Proxy.newProxyInstance(loader, new Class<?>[]{itemInterface},
-                new ProxyHandler("TideglassSettingsItem") {
+                new ProxyHandler("GlassworksSettingsItem") {
                     @Override
                     Object onInvoke(Method method, Object[] args) {
                         // a(): the view state. b(): refresh, nothing to do.
@@ -187,10 +187,10 @@ public final class SettingsHook {
         new Handler(Looper.getMainLooper()).post(() -> {
             Activity activity = currentActivity.get();
             if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
-                Log.w(TAG, "No activity to open the Tideglass settings in");
+                Log.w(TAG, "No activity to open the Glassworks settings in");
                 return;
             }
-            TideglassSettingsScreen.showMain(activity);
+            GlassworksSettingsScreen.showMain(activity);
         });
     }
 

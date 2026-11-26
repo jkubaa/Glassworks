@@ -1,4 +1,4 @@
-rootProject.name = "tideglass-patches"
+rootProject.name = "glassworks-patches"
 
 pluginManagement {
     repositories {

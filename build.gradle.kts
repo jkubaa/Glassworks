@@ -1,1 +1,1 @@
-// Root build configuration for tideglass-patches
+// Root build configuration for glassworks-patches

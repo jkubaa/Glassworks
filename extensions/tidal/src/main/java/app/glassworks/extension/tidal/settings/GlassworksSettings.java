@@ -1,15 +1,15 @@
-package app.tideglass.extension.settings;
+package app.glassworks.extension.tidal.settings;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
 /**
- * Tideglass preferences, stored in TIDAL's own data folder ({@code shared_prefs/tideglass.xml}).
+ * Glassworks preferences, stored in TIDAL's own data folder ({@code shared_prefs/tideglass.xml}).
  * <p>
  * Every getter falls back to its default before {@link #init(Context)} is called, so patched
  * code never crashes if it runs before MainActivity.onCreate.
  */
-public final class TideglassSettings {
+public final class GlassworksSettings {
 
     public static final boolean DEFAULT_PILL_BAR = true;
     public static final int DEFAULT_PILL_GAP_DP = 10;
@@ -23,6 +23,8 @@ public final class TideglassSettings {
     public static final int MIN_SATURATION_PERCENT = 50;
     public static final int MAX_SATURATION_PERCENT = 250;
 
+    // Keeps the name from before the project was renamed to Glassworks,
+    // so settings saved by earlier versions are not lost.
     private static final String PREFERENCES_NAME = "tideglass";
 
     static final String KEY_PILL_BAR = "pill_bar";
@@ -34,7 +36,7 @@ public final class TideglassSettings {
 
     private static volatile SharedPreferences preferences;
 
-    private TideglassSettings() {
+    private GlassworksSettings() {
     }
 
     public static void init(Context context) {

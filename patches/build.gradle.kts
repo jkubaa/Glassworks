@@ -10,16 +10,16 @@ plugins {
     alias(libs.plugins.animalsniffer)
 }
 
-group = "app.tideglass"
+group = "app.glassworks"
 
 patches {
     about {
-        name = "Tideglass Patches"
-        description = "Unofficial Morphe patches for TIDAL: a floating, frosted-glass pill navigation bar and more"
-        source = "git@github.com:jkubaa/tideglass-patches.git"
+        name = "Glassworks Patches"
+        description = "Unofficial Morphe patches that add features to Android apps and change how they look"
+        source = "git@github.com:jkubaa/glassworks-patches.git"
         author = "jkubaa"
-        contact = "https://github.com/jkubaa/tideglass-patches/issues"
-        website = "https://github.com/jkubaa/tideglass-patches"
+        contact = "https://github.com/jkubaa/glassworks-patches/issues"
+        website = "https://github.com/jkubaa/glassworks-patches"
         license = "GPLv3"
     }
 }

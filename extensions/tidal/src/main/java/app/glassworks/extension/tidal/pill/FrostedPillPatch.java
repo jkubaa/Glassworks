@@ -1,4 +1,4 @@
-package app.tideglass.extension.pill;
+package app.glassworks.extension.tidal.pill;
 
 import androidx.compose.ui.Modifier;
 import androidx.compose.ui.draw.ClipKt;
@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
-import app.tideglass.extension.settings.TideglassSettings;
+import app.glassworks.extension.tidal.settings.GlassworksSettings;
 
 /**
  * Entry points called from bytecode injected into TIDAL's AppScaffold and TabBar composables.
@@ -36,7 +36,7 @@ public final class FrostedPillPatch {
      * Injected at the start of the TabBar row composable, wrapping its {@code modifier} parameter.
      */
     public static Modifier tabBarModifier(Modifier modifier) {
-        if (!TideglassSettings.isPillBarEnabled() || modifier == null || WRAPPED.contains(modifier)) {
+        if (!GlassworksSettings.isPillBarEnabled() || modifier == null || WRAPPED.contains(modifier)) {
             return modifier;
         }
         return remember(modifier.then(FrostedPillElement.INSTANCE));
@@ -47,10 +47,10 @@ public final class FrostedPillPatch {
      * modifier. The gap is padding below the pill, so it only exists while the mini player shows.
      */
     public static Modifier miniPlayerModifier(Modifier modifier) {
-        if (!TideglassSettings.isPillBarEnabled() || modifier == null || WRAPPED.contains(modifier)) {
+        if (!GlassworksSettings.isPillBarEnabled() || modifier == null || WRAPPED.contains(modifier)) {
             return modifier;
         }
-        Modifier withGap = ComposeCompat.paddingBottom(modifier, TideglassSettings.getPillGapDp());
+        Modifier withGap = ComposeCompat.paddingBottom(modifier, GlassworksSettings.getPillGapDp());
         return remember(withGap.then(FrostedPillElement.INSTANCE));
     }
 
@@ -60,7 +60,7 @@ public final class FrostedPillPatch {
      */
     public static Modifier cardBrushBackground(Modifier modifier, Brush brush, Shape shape,
                                                float alpha, int defaultsMask, Object unused) {
-        if (TideglassSettings.isPillBarEnabled()) {
+        if (GlassworksSettings.isPillBarEnabled()) {
             return modifier;
         }
         return ComposeCompat.brushBackground(modifier, brush, shape, alpha, defaultsMask, unused);
@@ -70,7 +70,7 @@ public final class FrostedPillPatch {
      * Replaces {@code Modifier.background(color, shape)} of the shared card.
      */
     public static Modifier cardBackground(Modifier modifier, long color, Shape shape) {
-        if (TideglassSettings.isPillBarEnabled()) {
+        if (GlassworksSettings.isPillBarEnabled()) {
             return modifier;
         }
         return ComposeCompat.background(modifier, color, shape);
@@ -80,7 +80,7 @@ public final class FrostedPillPatch {
      * Replaces {@code Modifier.clip(shape)} of the shared card, so it does not cut the pills' edges.
      */
     public static Modifier cardClip(Modifier modifier, Shape shape) {
-        if (TideglassSettings.isPillBarEnabled()) {
+        if (GlassworksSettings.isPillBarEnabled()) {
             return modifier;
         }
         return ClipKt.clip(modifier, shape);

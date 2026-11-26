@@ -1,27 +1,28 @@
-# 🧊🧩 Tideglass Patches
+# 🧊🧩 Glassworks Patches
 
-Unofficial Morphe patches for the TIDAL Android app.
+Unofficial Morphe patches for Android apps.
 
 ## ❓ About
 
-Tideglass patches change how TIDAL looks and feels. The first patch replaces the bottom
-navigation bar with a floating, pill-shaped bar on a frosted-glass background.
+Glassworks patches add features to apps and change how they look and feel. The first patch,
+for TIDAL, replaces the bottom navigation bar with a floating, pill-shaped bar on a
+frosted-glass background.
 
-Tideglass is not affiliated with TIDAL or with the Morphe project. These patches do not
-unlock paid features or bypass DRM.
+Glassworks is not affiliated with the developers of any app it patches or with the Morphe
+project. These patches do not unlock paid features or bypass DRM.
 
 ### How to use these patches
 
-Click the button below, or manually add this repo url to Morphe Manager: https://github.com/jkubaa/tideglass-patches
+Click the button below, or manually add this repo url to Morphe Manager: https://github.com/jkubaa/glassworks-patches
 
-<a href="https://morphe.software/add-source?github=jkubaa/tideglass-patches">
+<a href="https://morphe.software/add-source?github=jkubaa/glassworks-patches">
   <img src=".github/assets/add-to-morphe.svg" alt="Add to Morphe" height="48">
 </a>
 
 ## 🩹 Patches list
 
 <!-- PATCHES_START -->
-> **[v1.0.0-dev.2](https://github.com/jkubaa/tideglass-patches/releases/tag/v1.0.0-dev.2)**&nbsp;&nbsp;&middot;&nbsp;&nbsp;`dev`&nbsp;&nbsp;&middot;&nbsp;&nbsp;**1 patch** across **1 app**&nbsp;&nbsp;&middot;&nbsp;&nbsp;[Full details](PATCHES.md)
+> **[v1.0.0-dev.2](https://github.com/jkubaa/glassworks-patches/releases/tag/v1.0.0-dev.2)**&nbsp;&nbsp;&middot;&nbsp;&nbsp;`dev`&nbsp;&nbsp;&middot;&nbsp;&nbsp;**1 patch** across **1 app**&nbsp;&nbsp;&middot;&nbsp;&nbsp;[Full details](PATCHES.md)
 
 | # | App | Patches | Version | Package |
 |---|---|---|---|---|
@@ -37,6 +38,20 @@ Click the button below, or manually add this repo url to Morphe Manager: https:/
 
 See the [Morphe documentation](https://github.com/MorpheApp/morphe-documentation) for more information.
 
+### 🗂️ Project layout
+
+All patches ship in one bundle, with each app's code kept in its own folder:
+
+| Path | Contents |
+|---|---|
+| `patches/src/main/kotlin/app/glassworks/patches/<app>/` | Patches for one app, plus its `shared/Constants.kt` with the app's compatibility info |
+| `patches/src/main/kotlin/app/glassworks/patches/shared/` | Helpers that work with any app |
+| `extensions/<app>/` | The app's extension (Java code the patches add to the app), built as `extensions/<app>.mpe` |
+
+To add an app, create `patches/.../patches/<app>/` and, if its patches need extension code,
+an `extensions/<app>/` module. Copy `extensions/tidal/build.gradle.kts` as a starting point and
+change its `name`, `namespace` and `minSdk`.
+
 ## 📜 License
 
-UserXYZ Patches are licensed under the [GNU General Public License v3.0](LICENSE)
+Glassworks Patches are licensed under the [GNU General Public License v3.0](LICENSE)

@@ -10,6 +10,6 @@
 
 | Patch | Details |
 |---|---|
-| **Frosted pill navigation bar** | Splits the bottom bar into a frosted-glass pill for the mini player and another for the tabs, with the screen content blurred behind them. Adjust it or switch back to the original bar in Settings &gt; Tideglass. |
+| **Frosted pill navigation bar** | Splits the bottom bar into a frosted-glass pill for the mini player and another for the tabs, with the screen content blurred behind them. Adjust it or switch back to the original bar in Settings &gt; Glassworks. |
 
 ---

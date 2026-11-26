@@ -1,22 +1,22 @@
-package app.tideglass.patches.settings
+package app.glassworks.patches.tidal.settings
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
-import app.tideglass.patches.shared.insertBeforeKeepingLabels
+import app.glassworks.patches.shared.insertBeforeKeepingLabels
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 
-private const val SETTINGS_HOOK = "Lapp/tideglass/extension/settings/SettingsHook;"
+private const val SETTINGS_HOOK = "Lapp/glassworks/extension/tidal/settings/SettingsHook;"
 
 /**
- * Initializes the Tideglass settings and adds a "Tideglass" page to TIDAL's settings.
+ * Initializes the Glassworks settings and adds a "Glassworks" page to TIDAL's settings.
  * Not shown in patch lists; patches with settings depend on it.
  */
 internal val settingsPatch = bytecodePatch {
-    extendWith("extensions/extension.mpe")
+    extendWith("extensions/tidal.mpe")
 
     execute {
         // Give the extension a Context and the current Activity before any UI is built.
@@ -29,7 +29,7 @@ internal val settingsPatch = bytecodePatch {
             )
         }
 
-        // Add the Tideglass row before every return of the main settings list.
+        // Add the Glassworks row before every return of the main settings list.
         MainSettingsListFingerprint.method.apply {
             val returnIndices = instructions
                 .withIndex()

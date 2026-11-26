@@ -1,4 +1,4 @@
-package app.tideglass.extension.pill;
+package app.glassworks.extension.tidal.pill;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -17,7 +17,7 @@ import androidx.compose.ui.node.DrawModifierNode;
 import androidx.compose.ui.node.DrawModifierNodeKt;
 import androidx.compose.ui.node.GlobalPositionAwareModifierNode;
 
-import app.tideglass.extension.settings.TideglassSettings;
+import app.glassworks.extension.tidal.settings.GlassworksSettings;
 
 /**
  * Draws a fully rounded, frosted-glass pill behind the content it modifies:
@@ -95,14 +95,14 @@ final class FrostedPillNode extends Modifier.Node
 
         boolean blurred = drawBackdrop(canvas, bounds);
 
-        int alpha = Math.round(TideglassSettings.getTintPercent() * 2.55f);
+        int alpha = Math.round(GlassworksSettings.getTintPercent() * 2.55f);
         if (!blurred) {
             alpha = Math.max(alpha, MIN_ALPHA_WITHOUT_BLUR);
         }
         tintPaint.setColor((alpha << 24) | TINT_RGB);
         canvas.drawPath(path, tintPaint);
 
-        if (TideglassSettings.isEdgeHighlightEnabled()) {
+        if (GlassworksSettings.isEdgeHighlightEnabled()) {
             canvas.drawPath(path, edgePaint);
         }
 

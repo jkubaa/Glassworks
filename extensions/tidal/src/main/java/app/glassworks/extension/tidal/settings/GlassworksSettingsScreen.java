@@ -1,4 +1,4 @@
-package app.tideglass.extension.settings;
+package app.glassworks.extension.tidal.settings;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -25,14 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tideglass settings pages, built from plain Android views so they need no resources or manifest
+ * Glassworks settings pages, built from plain Android views so they need no resources or manifest
  * entries. The main page lists one row per category (one per patch area); each category opens
  * its own page.
  * <p>
  * Changes are saved immediately. When the main page closes after a change on any page, the
  * activity is recreated so patched UI is rebuilt with the new settings.
  */
-final class TideglassSettingsScreen {
+final class GlassworksSettingsScreen {
 
     private static final int BACKGROUND = Color.BLACK;
     private static final int PRIMARY_TEXT = Color.WHITE;
@@ -42,7 +42,7 @@ final class TideglassSettingsScreen {
     private static final int CONTROL_BACKGROUND = 0xFF3A3A3C;
 
     private final Activity activity;
-    private final TideglassSettingsScreen parent;
+    private final GlassworksSettingsScreen parent;
     private final Dialog dialog;
     private final float density;
     private final LinearLayout content;
@@ -52,14 +52,14 @@ final class TideglassSettingsScreen {
     private final List<Runnable> refreshers = new ArrayList<>();
     private boolean changed;
 
-    /** Opens the main Tideglass page. */
+    /** Opens the main Glassworks page. */
     static void showMain(Activity activity) {
-        TideglassSettingsScreen screen = new TideglassSettingsScreen(activity, null, "Tideglass");
+        GlassworksSettingsScreen screen = new GlassworksSettingsScreen(activity, null, "Glassworks");
         screen.buildMain();
         screen.dialog.show();
     }
 
-    private TideglassSettingsScreen(Activity activity, TideglassSettingsScreen parent, String title) {
+    private GlassworksSettingsScreen(Activity activity, GlassworksSettingsScreen parent, String title) {
         this.activity = activity;
         this.parent = parent;
         this.density = activity.getResources().getDisplayMetrics().density;
@@ -111,9 +111,9 @@ final class TideglassSettingsScreen {
     /** Main page: one row per category. Add a row here for each new patch area. */
     private void buildMain() {
         categoryRow("Navigation bar", "Frosted pill bar, glass and spacing",
-                () -> openPage("Navigation bar", TideglassSettingsScreen::buildNavigationBar));
+                () -> openPage("Navigation bar", GlassworksSettingsScreen::buildNavigationBar));
 
-        footer("Tideglass patches are unofficial and not affiliated with TIDAL.");
+        footer("Glassworks patches are unofficial and not affiliated with TIDAL.");
     }
 
     private void buildNavigationBar() {
@@ -122,37 +122,37 @@ final class TideglassSettingsScreen {
         switchRow("Frosted pill bar",
                 "Split the mini player and tabs into frosted glass pills. Off restores TIDAL's original bar.",
                 false,
-                TideglassSettings::isPillBarEnabled,
+                GlassworksSettings::isPillBarEnabled,
                 value -> {
-                    TideglassSettings.putBoolean(TideglassSettings.KEY_PILL_BAR, value);
+                    GlassworksSettings.putBoolean(GlassworksSettings.KEY_PILL_BAR, value);
                     updatePillOnlyRows();
                 });
 
-        sliderRow("Gap between pills", "dp", 0, TideglassSettings.MAX_PILL_GAP_DP,
-                TideglassSettings::getPillGapDp,
-                value -> TideglassSettings.putInt(TideglassSettings.KEY_PILL_GAP_DP, value));
+        sliderRow("Gap between pills", "dp", 0, GlassworksSettings.MAX_PILL_GAP_DP,
+                GlassworksSettings::getPillGapDp,
+                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_PILL_GAP_DP, value));
 
         section("Glass", true);
 
         sliderRow("Tint", "%", 0, 100,
-                TideglassSettings::getTintPercent,
-                value -> TideglassSettings.putInt(TideglassSettings.KEY_TINT_PERCENT, value));
+                GlassworksSettings::getTintPercent,
+                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_TINT_PERCENT, value));
 
-        sliderRow("Blur", "dp", 0, TideglassSettings.MAX_BLUR_DP,
-                TideglassSettings::getBlurDp,
-                value -> TideglassSettings.putInt(TideglassSettings.KEY_BLUR_DP, value));
+        sliderRow("Blur", "dp", 0, GlassworksSettings.MAX_BLUR_DP,
+                GlassworksSettings::getBlurDp,
+                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_BLUR_DP, value));
 
-        sliderRow("Color saturation", "%", TideglassSettings.MIN_SATURATION_PERCENT,
-                TideglassSettings.MAX_SATURATION_PERCENT,
-                TideglassSettings::getSaturationPercent,
-                value -> TideglassSettings.putInt(TideglassSettings.KEY_SATURATION_PERCENT, value));
+        sliderRow("Color saturation", "%", GlassworksSettings.MIN_SATURATION_PERCENT,
+                GlassworksSettings.MAX_SATURATION_PERCENT,
+                GlassworksSettings::getSaturationPercent,
+                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_SATURATION_PERCENT, value));
 
         switchRow("Edge highlight", "A thin light outline around each pill.", true,
-                TideglassSettings::isEdgeHighlightEnabled,
-                value -> TideglassSettings.putBoolean(TideglassSettings.KEY_EDGE_HIGHLIGHT, value));
+                GlassworksSettings::isEdgeHighlightEnabled,
+                value -> GlassworksSettings.putBoolean(GlassworksSettings.KEY_EDGE_HIGHLIGHT, value));
 
         button("Reset to defaults", () -> {
-            TideglassSettings.resetNavigationBar();
+            GlassworksSettings.resetNavigationBar();
             changed = true;
             for (Runnable refresher : refreshers) {
                 refresher.run();
@@ -160,12 +160,12 @@ final class TideglassSettingsScreen {
             updatePillOnlyRows();
         });
 
-        footer("Changes apply when you leave Tideglass.");
+        footer("Changes apply when you leave Glassworks.");
         updatePillOnlyRows();
     }
 
     private void openPage(String title, PageBuilder builder) {
-        TideglassSettingsScreen page = new TideglassSettingsScreen(activity, this, title);
+        GlassworksSettingsScreen page = new GlassworksSettingsScreen(activity, this, title);
         builder.build(page);
         page.dialog.show();
     }
@@ -335,7 +335,7 @@ final class TideglassSettingsScreen {
     // endregion
 
     private void updatePillOnlyRows() {
-        boolean enabled = TideglassSettings.isPillBarEnabled();
+        boolean enabled = GlassworksSettings.isPillBarEnabled();
         for (View row : pillOnlyRows) {
             setEnabledRecursively(row, enabled);
             row.setAlpha(enabled ? 1f : 0.4f);
@@ -374,7 +374,7 @@ final class TideglassSettingsScreen {
     }
 
     private interface PageBuilder {
-        void build(TideglassSettingsScreen page);
+        void build(GlassworksSettingsScreen page);
     }
 
     private interface BooleanGetter {

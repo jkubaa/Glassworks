@@ -1,4 +1,4 @@
-package app.tideglass.patches.settings
+package app.glassworks.patches.tidal.settings
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.fieldAccess
