@@ -37,22 +37,30 @@ final class Backdrop implements ViewTreeObserver.OnPreDrawListener {
     private ViewTreeObserver observer;
     private int users;
     private boolean ready;
+    /** Settings version the blur effect was made for. */
+    private int effectVersion = -1;
 
     private Backdrop(View source) {
         this.source = source;
-        node.setRenderEffect(createEffect(source));
+        updateEffect();
     }
 
-    /**
-     * Blur and saturation from the settings. They are read once per backdrop; the settings page
-     * recreates the activity after changes, which creates a new backdrop.
-     */
-    private static RenderEffect createEffect(View source) {
+    /** Re-creates the blur when the settings changed, so changes apply without a restart. */
+    private void updateEffect() {
+        int version = GlassworksSettings.getVersion();
+        if (version != effectVersion) {
+            effectVersion = version;
+            node.setRenderEffect(createEffect(source.getResources().getDisplayMetrics().density));
+        }
+    }
+
+    /** Blur and saturation from the settings. */
+    static RenderEffect createEffect(float density) {
         ColorMatrix saturation = new ColorMatrix();
         saturation.setSaturation(GlassworksSettings.getSaturationPercent() / 100f);
         ColorMatrixColorFilter saturationFilter = new ColorMatrixColorFilter(saturation);
 
-        float radius = GlassworksSettings.getBlurDp() * source.getResources().getDisplayMetrics().density;
+        float radius = GlassworksSettings.getBlurDp() * density;
         if (radius <= 0f) {
             return RenderEffect.createColorFilterEffect(saturationFilter);
         }
@@ -132,6 +140,7 @@ final class Backdrop implements ViewTreeObserver.OnPreDrawListener {
             return;
         }
 
+        updateEffect();
         node.setPosition(0, 0, width, height);
         RecordingCanvas canvas = node.beginRecording(width, height);
         try {

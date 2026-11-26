@@ -108,6 +108,15 @@ public final class FrostedPillPatch {
         }
     }
 
+    /**
+     * Called when settings that only change how the glass is drawn (tint, blur, edge, shadow)
+     * were changed, so the pills redraw without recreating the activity.
+     */
+    public static void onSettingsChanged() {
+        ArtworkTint.update();
+        FrostedPillNode.invalidateAll();
+    }
+
     /** Corner radius of the one-pill card, in dp. */
     static float getCardRadiusDp() {
         return CARD_MAX_RADIUS_DP * GlassworksSettings.getRoundnessPercent() / 100f;

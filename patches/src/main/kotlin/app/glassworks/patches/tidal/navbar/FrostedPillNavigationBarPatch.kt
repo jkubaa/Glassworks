@@ -5,6 +5,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.instructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.glassworks.patches.tidal.media.mediaSessionHookPatch
 import app.glassworks.patches.tidal.settings.settingsPatch
 import app.glassworks.patches.tidal.shared.Constants.COMPATIBILITY_TIDAL
 import app.glassworks.patches.shared.argumentRegister
@@ -26,13 +27,15 @@ private const val WRAP_MODIFIER = "($MODIFIER)$MODIFIER"
 val frostedPillNavigationBarPatch = bytecodePatch(
     name = "Frosted pill navigation bar",
     description = "Replaces the bottom bar with frosted-glass pills for the mini player and the tabs, " +
-        "with the screen content blurred behind them. Choose one or two pills, their shape, size and " +
-        "tint, hide tabs or give one tab its own pill in Settings > Glassworks.",
+        "with the screen content blurred behind them. Choose one or two pills, frosted or liquid glass, " +
+        "their shape, size and tint (including one from the album art), and hide, reorder or separate " +
+        "tabs in Settings > Glassworks.",
     default = true,
 ) {
     compatibleWith(COMPATIBILITY_TIDAL)
 
-    dependsOn(settingsPatch)
+    // The media session hook provides the current artwork for the album art tint.
+    dependsOn(settingsPatch, mediaSessionHookPatch)
 
     extendWith("extensions/tidal.mpe")
 

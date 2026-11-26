@@ -30,6 +30,8 @@ public final class GlassworksSettings {
     public static final int DEFAULT_SATURATION_PERCENT = 160;
     public static final boolean DEFAULT_EDGE_HIGHLIGHT = true;
     public static final String DEFAULT_SEPARATE_TAB = "";
+    public static final int DEFAULT_GLASS_STYLE = 0;
+    public static final int DEFAULT_SHADOW_PERCENT = 25;
 
     public static final int MAX_PILL_GAP_DP = 32;
     public static final int MAX_SIDE_MARGIN_DP = 48;
@@ -40,11 +42,17 @@ public final class GlassworksSettings {
 
     /** Tint color presets: names shown in settings and their RGB values. */
     public static final String[] TINT_COLOR_NAMES = {
-            "Graphite", "Black", "Midnight", "Ocean", "Plum", "Wine", "Forest",
+            "Graphite", "Album art", "Black", "Midnight", "Ocean", "Plum", "Wine", "Forest",
     };
+    /** -1 marks "Album art", whose color comes from the current track's artwork. */
     public static final int[] TINT_COLORS = {
-            0x1C1C1E, 0x000000, 0x0B1A33, 0x053841, 0x2A1236, 0x3A0D18, 0x0F2A1A,
+            0x1C1C1E, -1, 0x000000, 0x0B1A33, 0x053841, 0x2A1236, 0x3A0D18, 0x0F2A1A,
     };
+    public static final int TINT_ALBUM_ART = 1;
+
+    /** Glass styles. */
+    public static final int GLASS_FROSTED = 0;
+    public static final int GLASS_LIQUID = 1;
 
     /** TIDAL's tab names ({@code TabBarContract$TabType}) and the labels shown in settings. */
     public static final String[] TAB_NAMES = {"HOME", "FEED", "SEARCH", "COLLECTION", "UPLOADS"};
@@ -69,14 +77,19 @@ public final class GlassworksSettings {
     static final String KEY_EDGE_HIGHLIGHT = "edge_highlight";
     static final String KEY_SEPARATE_TAB = "separate_tab";
     static final String KEY_HIDDEN_TAB_PREFIX = "hide_tab_";
+    static final String KEY_TAB_ORDER = "tab_order";
+    static final String KEY_GLASS_STYLE = "glass_style";
+    static final String KEY_SHADOW_PERCENT = "shadow_percent";
 
     private static final String[] NAVIGATION_BAR_KEYS = {
             KEY_PILL_BAR, KEY_SINGLE_PILL, KEY_PILL_GAP_DP, KEY_ROUNDNESS_PERCENT, KEY_SIDE_MARGIN_DP,
             KEY_LIFT_DP, KEY_TINT_COLOR, KEY_TINT_PERCENT, KEY_BLUR_DP, KEY_SATURATION_PERCENT,
-            KEY_EDGE_HIGHLIGHT, KEY_SEPARATE_TAB,
+            KEY_EDGE_HIGHLIGHT, KEY_SEPARATE_TAB, KEY_TAB_ORDER, KEY_GLASS_STYLE, KEY_SHADOW_PERCENT,
     };
 
     private static volatile SharedPreferences preferences;
+    /** Increased on every change, so cached drawing objects know to update. */
+    private static volatile int version;
 
     private GlassworksSettings() {
     }
@@ -136,9 +149,20 @@ public final class GlassworksSettings {
         return clamp(getInt(KEY_TINT_COLOR, DEFAULT_TINT_COLOR), 0, TINT_COLORS.length - 1);
     }
 
-    /** Tint color as RGB, without alpha. */
+    /** Tint color as RGB, without alpha. For "Album art", the fallback (Graphite). */
     public static int getTintRgb() {
-        return TINT_COLORS[getTintColorIndex()];
+        int rgb = TINT_COLORS[getTintColorIndex()];
+        return rgb < 0 ? TINT_COLORS[0] : rgb;
+    }
+
+    /** {@link #GLASS_FROSTED} or {@link #GLASS_LIQUID}. */
+    public static int getGlassStyle() {
+        return clamp(getInt(KEY_GLASS_STYLE, DEFAULT_GLASS_STYLE), GLASS_FROSTED, GLASS_LIQUID);
+    }
+
+    /** Strength of the shadow below the pills, in percent. 0 disables it. */
+    public static int getShadowPercent() {
+        return clamp(getInt(KEY_SHADOW_PERCENT, DEFAULT_SHADOW_PERCENT), 0, 100);
     }
 
     /** Opacity of the tint over the blur, in percent. */
@@ -172,12 +196,52 @@ public final class GlassworksSettings {
         return getBoolean(KEY_HIDDEN_TAB_PREFIX + tabName, false);
     }
 
+    /**
+     * Tab names in the order chosen in settings. Tabs missing from the saved order (such as ones
+     * TIDAL adds later) keep TIDAL's place after the ordered ones. Empty if no order was chosen.
+     */
+    public static String[] getTabOrder() {
+        String order = getString(KEY_TAB_ORDER, "");
+        return order.isEmpty() ? new String[0] : order.split(",");
+    }
+
+    /** The tab order for the settings page: the saved order, completed with the other tabs. */
+    static String[] getFullTabOrder() {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        for (String name : getTabOrder()) {
+            if (java.util.Arrays.asList(TAB_NAMES).contains(name) && !result.contains(name)) {
+                result.add(name);
+            }
+        }
+        for (String name : TAB_NAMES) {
+            if (!result.contains(name)) {
+                result.add(name);
+            }
+        }
+        return result.toArray(new String[0]);
+    }
+
+    static String tabLabel(String name) {
+        for (int i = 0; i < TAB_NAMES.length; i++) {
+            if (TAB_NAMES[i].equals(name)) {
+                return TAB_LABELS[i];
+            }
+        }
+        return name;
+    }
+
+    /** Changes every time a setting changes. */
+    public static int getVersion() {
+        return version;
+    }
+
     // endregion
 
     // region Storage
 
     static void putBoolean(String key, boolean value) {
         SharedPreferences prefs = preferences;
+        version++;
         if (prefs != null) {
             prefs.edit().putBoolean(key, value).apply();
         }
@@ -185,6 +249,7 @@ public final class GlassworksSettings {
 
     static void putInt(String key, int value) {
         SharedPreferences prefs = preferences;
+        version++;
         if (prefs != null) {
             prefs.edit().putInt(key, value).apply();
         }
@@ -192,6 +257,7 @@ public final class GlassworksSettings {
 
     public static void putString(String key, String value) {
         SharedPreferences prefs = preferences;
+        version++;
         if (prefs != null) {
             if (value == null) {
                 prefs.edit().remove(key).apply();
@@ -203,6 +269,7 @@ public final class GlassworksSettings {
 
     static void putBarStyle(int style) {
         SharedPreferences prefs = preferences;
+        version++;
         if (prefs != null) {
             prefs.edit()
                     .putBoolean(KEY_PILL_BAR, style != STYLE_ORIGINAL)
@@ -214,6 +281,7 @@ public final class GlassworksSettings {
     /** Resets only the navigation bar settings, leaving other categories untouched. */
     static void resetNavigationBar() {
         SharedPreferences prefs = preferences;
+        version++;
         if (prefs != null) {
             SharedPreferences.Editor editor = prefs.edit();
             for (String key : NAVIGATION_BAR_KEYS) {

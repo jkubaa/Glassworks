@@ -11,7 +11,7 @@ import java.util.List;
 import app.glassworks.extension.tidal.settings.GlassworksSettings;
 
 /**
- * Hides tabs and moves one tab into its own round pill at the right of the tab bar.
+ * Hides and reorders tabs, and moves one tab into its own round pill at the right of the tab bar.
  * <p>
  * Called from bytecode injected into TIDAL's TabBar composables: {@link #tabs} filters the list of
  * {@code TabBarContract$TabType} values before TIDAL builds the tab items, and
@@ -67,6 +67,7 @@ public final class TabBarHook {
                 // Never hide every tab.
                 result = new ArrayList(types);
             }
+            applyOrder(result);
 
             String separate = GlassworksSettings.isTwoPills() ? GlassworksSettings.getSeparateTab() : "";
             Object separateType = null;
@@ -90,6 +91,26 @@ public final class TabBarHook {
             splitActive = false;
             return types;
         }
+    }
+
+    /**
+     * Sorts the tabs into the order chosen in settings. Tabs not in that order keep their
+     * position relative to each other, after the ordered ones.
+     */
+    private static void applyOrder(List result) {
+        String[] order = GlassworksSettings.getTabOrder();
+        if (order.length == 0) {
+            return;
+        }
+        List<String> orderList = java.util.Arrays.asList(order);
+        List sorted = new ArrayList(result);
+        java.util.Collections.sort(sorted, (a, b) -> {
+            int ia = orderList.indexOf(name(a));
+            int ib = orderList.indexOf(name(b));
+            return Integer.compare(ia < 0 ? Integer.MAX_VALUE : ia, ib < 0 ? Integer.MAX_VALUE : ib);
+        });
+        result.clear();
+        result.addAll(sorted);
     }
 
     /** Injected before each tab item is composed, with TIDAL's tab item object. */

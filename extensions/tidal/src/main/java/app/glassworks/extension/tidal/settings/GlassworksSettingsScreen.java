@@ -31,14 +31,18 @@ import java.util.List;
 
 import app.glassworks.extension.tidal.lastfm.LastFmAccount;
 import app.glassworks.extension.tidal.lastfm.LastFmSettings;
+import app.glassworks.extension.tidal.pill.ArtworkTint;
+import app.glassworks.extension.tidal.pill.FrostedPillPatch;
+import app.glassworks.extension.tidal.pill.GlassPreview;
 
 /**
  * Glassworks settings pages, built from plain Android views so they need no resources or manifest
  * entries, and styled after TIDAL's own settings (see {@link TidalStyle}). The main page lists one
  * row per category (one per patch area); each category opens its own page.
  * <p>
- * Changes are saved immediately. When the main page closes after a change that needs it, the
- * activity is recreated so patched UI is rebuilt with the new settings.
+ * Changes are saved immediately. Changes that only affect how the glass is drawn apply at once;
+ * when the main page closes after a change to the bar's layout, the activity is recreated so
+ * patched UI is rebuilt with the new settings.
  */
 final class GlassworksSettingsScreen {
 
@@ -58,7 +62,11 @@ final class GlassworksSettingsScreen {
 
     /** Whether changes on this page need the activity to be recreated. */
     private boolean restartOnChange;
+    /** While true, rows being added only change how the glass is drawn and apply without a restart. */
+    private boolean buildingLiveRows;
     private boolean changed;
+    private boolean liveChanged;
+    private GlassPreview preview;
 
     /** Opens the main Glassworks page. */
     static void showMain(Activity activity) {
@@ -107,22 +115,44 @@ final class GlassworksSettingsScreen {
         if (parent != null) {
             // Sub-page: let the main page recreate the activity once it closes.
             parent.changed |= changed;
+            parent.liveChanged |= liveChanged;
             parent.refresh();
         } else if (changed && !activity.isFinishing()) {
             activity.recreate();
+        } else if (liveChanged) {
+            FrostedPillPatch.onSettingsChanged();
         }
     }
 
-    private void markChanged() {
-        if (restartOnChange) {
+    private void markChanged(boolean live) {
+        if (live) {
+            liveChanged = true;
+            ArtworkTint.update();
+        } else if (restartOnChange) {
             changed = true;
         }
+        if (preview != null) {
+            preview.update();
+        }
         updateConditionalRows();
+    }
+
+    /** Adds rows whose changes apply without recreating the activity. */
+    private void liveRows(Runnable rows) {
+        buildingLiveRows = true;
+        try {
+            rows.run();
+        } finally {
+            buildingLiveRows = false;
+        }
     }
 
     private void refresh() {
         for (Runnable refresher : refreshers) {
             refresher.run();
+        }
+        if (preview != null) {
+            preview.update();
         }
         updateConditionalRows();
     }
@@ -162,6 +192,12 @@ final class GlassworksSettingsScreen {
         restartOnChange = true;
         BooleanGetter pills = GlassworksSettings::isPillBarEnabled;
         BooleanGetter twoPills = GlassworksSettings::isTwoPills;
+
+        preview = new GlassPreview(activity);
+        LinearLayout.LayoutParams previewParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        previewParams.setMargins(dp(16), dp(8), dp(16), 0);
+        content.addView(preview, previewParams);
 
         section("Style");
 
@@ -205,31 +241,47 @@ final class GlassworksSettingsScreen {
 
         section("Glass");
 
-        choiceRow("Tint color", GlassworksSettings.TINT_COLOR_NAMES,
-                GlassworksSettings::getTintColorIndex,
-                index -> GlassworksSettings.putInt(GlassworksSettings.KEY_TINT_COLOR, index),
-                pills);
+        liveRows(() -> {
+            choiceRow("Glass style", new String[]{"Frosted", "Liquid"},
+                    GlassworksSettings::getGlassStyle,
+                    index -> GlassworksSettings.putInt(GlassworksSettings.KEY_GLASS_STYLE, index),
+                    pills);
+            note(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                    ? "Liquid adds a sheen and a brighter rim, and bends the content near the edges like a lens."
+                    : "Liquid adds a sheen and a brighter rim. Bending the content needs Android 13 or newer.");
 
-        sliderRow("Tint", "%", 0, 100,
-                GlassworksSettings::getTintPercent,
-                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_TINT_PERCENT, value),
-                pills);
+            choiceRow("Tint color", GlassworksSettings.TINT_COLOR_NAMES,
+                    GlassworksSettings::getTintColorIndex,
+                    index -> GlassworksSettings.putInt(GlassworksSettings.KEY_TINT_COLOR, index),
+                    pills);
+            note("Album art takes its color from the current track's cover and fades as tracks change.");
 
-        sliderRow("Blur", "dp", 0, GlassworksSettings.MAX_BLUR_DP,
-                GlassworksSettings::getBlurDp,
-                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_BLUR_DP, value),
-                pills);
+            sliderRow("Tint", "%", 0, 100,
+                    GlassworksSettings::getTintPercent,
+                    value -> GlassworksSettings.putInt(GlassworksSettings.KEY_TINT_PERCENT, value),
+                    pills);
 
-        sliderRow("Color saturation", "%", GlassworksSettings.MIN_SATURATION_PERCENT,
-                GlassworksSettings.MAX_SATURATION_PERCENT,
-                GlassworksSettings::getSaturationPercent,
-                value -> GlassworksSettings.putInt(GlassworksSettings.KEY_SATURATION_PERCENT, value),
-                pills);
+            sliderRow("Blur", "dp", 0, GlassworksSettings.MAX_BLUR_DP,
+                    GlassworksSettings::getBlurDp,
+                    value -> GlassworksSettings.putInt(GlassworksSettings.KEY_BLUR_DP, value),
+                    pills);
 
-        switchRow("Edge highlight", "A thin light outline around each pill.",
-                GlassworksSettings::isEdgeHighlightEnabled,
-                value -> GlassworksSettings.putBoolean(GlassworksSettings.KEY_EDGE_HIGHLIGHT, value),
-                pills);
+            sliderRow("Color saturation", "%", GlassworksSettings.MIN_SATURATION_PERCENT,
+                    GlassworksSettings.MAX_SATURATION_PERCENT,
+                    GlassworksSettings::getSaturationPercent,
+                    value -> GlassworksSettings.putInt(GlassworksSettings.KEY_SATURATION_PERCENT, value),
+                    pills);
+
+            sliderRow("Shadow", "%", 0, 100,
+                    GlassworksSettings::getShadowPercent,
+                    value -> GlassworksSettings.putInt(GlassworksSettings.KEY_SHADOW_PERCENT, value),
+                    pills);
+
+            switchRow("Edge highlight", "A thin light outline around each pill.",
+                    GlassworksSettings::isEdgeHighlightEnabled,
+                    value -> GlassworksSettings.putBoolean(GlassworksSettings.KEY_EDGE_HIGHLIGHT, value),
+                    pills);
+        });
 
         section("Tabs");
 
@@ -251,6 +303,8 @@ final class GlassworksSettingsScreen {
                 twoPills);
         note("Shows one tab in its own round pill at the right end of the bar. Needs two pills.");
 
+        actionRow("Tab order", null, this::showTabOrder, null);
+
         for (int i = 0; i < GlassworksSettings.TAB_NAMES.length; i++) {
             String name = GlassworksSettings.TAB_NAMES[i];
             String key = GlassworksSettings.KEY_HIDDEN_TAB_PREFIX + name;
@@ -268,7 +322,7 @@ final class GlassworksSettingsScreen {
             refresh();
         }, null);
 
-        footer("Changes apply when you leave Glassworks.");
+        footer("Glass changes apply right away. Changes to the layout and tabs apply when you leave Glassworks.");
         updateConditionalRows();
     }
 
@@ -414,6 +468,64 @@ final class GlassworksSettingsScreen {
             });
         });
         login.show();
+    }
+
+    /** Moves tabs up and down; each move is saved at once. */
+    private void showTabOrder() {
+        LinearLayout list = new LinearLayout(activity);
+        list.setOrientation(LinearLayout.VERTICAL);
+        Dialog orderDialog = panel("Tab order", list);
+        Runnable[] fill = new Runnable[1];
+        fill[0] = () -> {
+            list.removeAllViews();
+            String[] order = GlassworksSettings.getFullTabOrder();
+            for (int i = 0; i < order.length; i++) {
+                int index = i;
+                LinearLayout row = new LinearLayout(activity);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setMinimumHeight(dp(52));
+                row.setPadding(dp(24), 0, dp(12), 0);
+                row.addView(text(GlassworksSettings.tabLabel(order[i]), TidalStyle.TITLE_SP, TidalStyle.PRIMARY_TEXT),
+                        new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                row.addView(moveButton("↑", "Move up", index > 0, () -> {
+                    swap(order, index, index - 1);
+                    fill[0].run();
+                }));
+                row.addView(moveButton("↓", "Move down", index < order.length - 1, () -> {
+                    swap(order, index, index + 1);
+                    fill[0].run();
+                }));
+                list.addView(row);
+            }
+            LinearLayout buttons = dialogButtons(list);
+            TextView done = dialogButton("Done", true);
+            buttons.setPadding(dp(24), dp(16), dp(24), 0);
+            buttons.addView(done);
+            done.setOnClickListener(v -> orderDialog.dismiss());
+        };
+        fill[0].run();
+        orderDialog.show();
+    }
+
+    private void swap(String[] order, int a, int b) {
+        String moved = order[a];
+        order[a] = order[b];
+        order[b] = moved;
+        GlassworksSettings.putString(GlassworksSettings.KEY_TAB_ORDER, String.join(",", order));
+        markChanged(false);
+    }
+
+    private TextView moveButton(String symbol, String description, boolean enabled, Runnable onClick) {
+        TextView button = text(symbol, 20, TidalStyle.PRIMARY_TEXT);
+        button.setGravity(Gravity.CENTER);
+        button.setContentDescription(description);
+        button.setEnabled(enabled);
+        button.setAlpha(enabled ? 1f : 0.25f);
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(TidalStyle.RIPPLE), null, null));
+        button.setOnClickListener(v -> onClick.run());
+        button.setLayoutParams(new LinearLayout.LayoutParams(dp(48), dp(48)));
+        return button;
     }
 
     private void showTextInput(String title, String current, boolean secret, StringSetter setter) {
@@ -649,6 +761,7 @@ final class GlassworksSettingsScreen {
 
     private void switchRow(String title, String summary, BooleanGetter getter, BooleanSetter setter,
                            BooleanGetter enabledWhen) {
+        boolean live = buildingLiveRows;
         LinearLayout row = rowContainer(LinearLayout.HORIZONTAL);
         row.addView(texts(title, summary, null),
                 new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -657,7 +770,7 @@ final class GlassworksSettingsScreen {
         toggle.setChecked(getter.get(), false);
         toggle.setOnChangeListener(checked -> {
             setter.set(checked);
-            markChanged();
+            markChanged(live);
         });
         LinearLayout.LayoutParams toggleParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -672,6 +785,7 @@ final class GlassworksSettingsScreen {
 
     private void choiceRow(String title, String[] options, IntGetter getter, IntSetter setter,
                            BooleanGetter enabledWhen) {
+        boolean live = buildingLiveRows;
         LinearLayout row = rowContainer(LinearLayout.HORIZONTAL);
         row.addView(text(title, TidalStyle.TITLE_SP, TidalStyle.PRIMARY_TEXT),
                 new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -687,7 +801,7 @@ final class GlassworksSettingsScreen {
             if (index != getter.get()) {
                 setter.set(index);
                 update.run();
-                markChanged();
+                markChanged(live);
             }
         }));
         refreshers.add(update);
@@ -697,6 +811,7 @@ final class GlassworksSettingsScreen {
 
     private void sliderRow(String title, String unit, int min, int max,
                            IntGetter getter, IntSetter setter, BooleanGetter enabledWhen) {
+        boolean live = buildingLiveRows;
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(dp(16), dp(16), dp(16), dp(8));
@@ -728,7 +843,7 @@ final class GlassworksSettingsScreen {
                 valueView.setText(progress + " " + unit);
                 if (fromUser) {
                     setter.set(progress);
-                    markChanged();
+                    markChanged(live);
                 }
             }
 
