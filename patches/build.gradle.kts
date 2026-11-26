@@ -12,6 +12,15 @@ plugins {
 
 group = "app.glassworks"
 
+// Dev-only patches (src/dev) are compiled only with -Pglassworks.dev, so they never ship in
+// the published bundle. The "Dev build" patch there lets a test build install next to the
+// TIDAL app patched by Morphe Manager.
+if (providers.gradleProperty("glassworks.dev").isPresent) {
+    kotlin.sourceSets.named("main") {
+        kotlin.srcDir("src/dev/kotlin")
+    }
+}
+
 patches {
     about {
         name = "Glassworks Patches"
