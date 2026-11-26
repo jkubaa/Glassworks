@@ -347,7 +347,9 @@ final class Scrobbler {
         if (e.code == LastFmClient.ERROR_INVALID_SESSION) {
             LastFmSettings.setLastError("Last.fm ended the session. Log in again.");
         } else if (e.code == LastFmClient.ERROR_INVALID_API_KEY) {
-            LastFmSettings.setLastError("Last.fm rejected the API key.");
+            LastFmSettings.setLastError(LastFmSettings.isUsingOwnApiKey()
+                    ? "Last.fm rejected the API key."
+                    : "Last.fm rejected the built-in API key. Use your own key under Advanced.");
         } else if (e.isRetryable()) {
             LastFmSettings.setLastError("Last.fm could not be reached. Scrobbles are kept and sent later.");
         } else {

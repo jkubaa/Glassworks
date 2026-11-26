@@ -39,6 +39,11 @@ final class LastFmClient {
     static final int ERROR_INVALID_SESSION = 9;
     static final int ERROR_INVALID_API_KEY = 10;
     static final int ERROR_AUTHENTICATION = 4;
+    /** Browser login: the user has not allowed access yet. */
+    static final int ERROR_TOKEN_NOT_AUTHORIZED = 14;
+    /** Browser login: the token is older than 60 minutes or was already used. */
+    static final int ERROR_TOKEN_EXPIRED = 15;
+    static final int ERROR_SUSPENDED_API_KEY = 26;
 
     /** A failed call. {@link #code} is Last.fm's error code, or 0 for network errors. */
     static final class LastFmException extends Exception {
@@ -79,10 +84,46 @@ final class LastFmClient {
         params.put("method", "auth.getMobileSession");
         params.put("username", username);
         params.put("password", password);
-        JSONObject response = call(params);
+        return parseSession(call(params), username);
+    }
+
+    /** Starts a browser login: the user approves this token at {@link #authUrl(String)}. Valid for 60 minutes. */
+    String getToken() throws LastFmException {
+        Map<String, String> params = new TreeMap<>();
+        params.put("method", "auth.getToken");
+        String token = call(params).optString("token", "");
+        if (token.isEmpty()) {
+            throw new LastFmException(-1, "Unexpected response from Last.fm");
+        }
+        return token;
+    }
+
+    /** The page where the user allows this app to use their account. */
+    String authUrl(String token) {
+        try {
+            return "https://www.last.fm/api/auth/?api_key=" + URLEncoder.encode(apiKey, "UTF-8")
+                    + "&token=" + URLEncoder.encode(token, "UTF-8");
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Finishes a browser login. Throws {@link #ERROR_TOKEN_NOT_AUTHORIZED} until the user allowed access.
+     *
+     * @return {sessionKey, username}
+     */
+    String[] getSession(String token) throws LastFmException {
+        Map<String, String> params = new TreeMap<>();
+        params.put("method", "auth.getSession");
+        params.put("token", token);
+        return parseSession(call(params), "");
+    }
+
+    private static String[] parseSession(JSONObject response, String fallbackName) throws LastFmException {
         try {
             JSONObject session = response.getJSONObject("session");
-            return new String[]{session.getString("key"), session.optString("name", username)};
+            return new String[]{session.getString("key"), session.optString("name", fallbackName)};
         } catch (JSONException e) {
             throw new LastFmException(-1, "Unexpected response from Last.fm");
         }

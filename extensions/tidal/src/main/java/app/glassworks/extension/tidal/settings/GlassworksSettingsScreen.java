@@ -335,6 +335,8 @@ final class GlassworksSettingsScreen {
 
     private void buildLastFm() {
         BooleanGetter loggedIn = LastFmSettings::isLoggedIn;
+        // Why the last browser login failed, shown until the next attempt.
+        String[] loginError = new String[1];
 
         section("Account");
 
@@ -358,21 +360,38 @@ final class GlassworksSettingsScreen {
                 statusDetail.setTextColor(error.isEmpty() ? TidalStyle.SECONDARY_TEXT : TidalStyle.ERROR_TEXT);
             } else if (!LastFmSettings.hasApiAccount()) {
                 status.setText("Not logged in");
-                statusDetail.setText("Add your Last.fm API key and secret, then log in.");
+                statusDetail.setText("Add your Last.fm API key and secret under Advanced, then log in.");
+                statusDetail.setTextColor(TidalStyle.SECONDARY_TEXT);
+            } else if (LastFmAccount.isBrowserLoginPending()) {
+                status.setText("Waiting for Last.fm");
+                statusDetail.setText("Allow access in your browser, then come back here.");
                 statusDetail.setTextColor(TidalStyle.SECONDARY_TEXT);
             } else {
                 status.setText("Not logged in");
-                statusDetail.setText("Log in with your Last.fm username and password.");
-                statusDetail.setTextColor(TidalStyle.SECONDARY_TEXT);
+                statusDetail.setText(loginError[0] != null ? loginError[0]
+                        : "Log in to scrobble the tracks you play.");
+                statusDetail.setTextColor(loginError[0] != null ? TidalStyle.ERROR_TEXT : TidalStyle.SECONDARY_TEXT);
             }
         };
         refreshers.add(updateStatus);
 
-        inputRow("API key", LastFmSettings.KEY_API_KEY, LastFmSettings::getApiKey, false);
-        inputRow("API secret", LastFmSettings.KEY_API_SECRET, LastFmSettings::getApiSecret, true);
+        actionRow("Log in with Last.fm",
+                "Opens Last.fm in your browser to allow access. Glassworks never sees your password.",
+                () -> {
+                    loginError[0] = null;
+                    LastFmAccount.logInWithBrowser(activity, result -> {
+                        loginError[0] = result;
+                        refresh();
+                    });
+                    refresh();
+                },
+                () -> LastFmSettings.hasApiAccount() && !LastFmSettings.isLoggedIn()
+                        && !LastFmAccount.isBrowserLoginPending());
 
-        actionRow("Log in", null, this::showLogin,
-                () -> LastFmSettings.hasApiAccount() && !LastFmSettings.isLoggedIn());
+        actionRow("Cancel login", null, () -> {
+            LastFmAccount.cancelBrowserLogin();
+            refresh();
+        }, LastFmAccount::isBrowserLoginPending);
 
         actionRow("Send waiting scrobbles", null, () -> {
             LastFmAccount.sendPendingScrobbles();
@@ -383,16 +402,6 @@ final class GlassworksSettingsScreen {
             LastFmSettings.logOut();
             refresh();
         }, loggedIn);
-
-        actionRow("Get an API key",
-                "Opens Last.fm in your browser. Any application name works, and the callback URL can stay empty.",
-                () -> {
-                    try {
-                        activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(LAST_FM_API_ACCOUNT_URL)));
-                    } catch (Exception ignored) {
-                        // No browser.
-                    }
-                }, null);
 
         section("Scrobbling");
 
@@ -418,7 +427,40 @@ final class GlassworksSettingsScreen {
                 LastFmSettings::isEnabled);
         note("A track also counts after 4 minutes of play. Tracks shorter than 30 seconds are not scrobbled.");
 
-        footer("Your password is only sent to Last.fm to log in. It is not stored on this device.");
+        section("Advanced");
+
+        if (LastFmSettings.hasBuiltInApiAccount()) {
+            switchRow("Use your own API key",
+                    "Only needed if the built-in key stops working. Switching logs you out.",
+                    LastFmSettings::isUsingOwnApiKey,
+                    value -> {
+                        LastFmSettings.setUsingOwnApiKey(value);
+                        refresh();
+                    },
+                    null);
+        }
+        BooleanGetter usingOwnKey = LastFmSettings::isUsingOwnApiKey;
+
+        inputRow("API key", LastFmSettings.KEY_API_KEY, LastFmSettings::getOwnApiKey, false, usingOwnKey);
+        inputRow("API secret", LastFmSettings.KEY_API_SECRET, LastFmSettings::getOwnApiSecret, true, usingOwnKey);
+
+        actionRow("Get an API key",
+                "Opens Last.fm in your browser. Any application name works, and the callback URL can stay empty.",
+                () -> {
+                    try {
+                        activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(LAST_FM_API_ACCOUNT_URL)));
+                    } catch (Exception ignored) {
+                        // No browser.
+                    }
+                }, usingOwnKey);
+
+        actionRow("Log in with password",
+                "If logging in through the browser does not work. The password is only sent to Last.fm, "
+                        + "never stored.",
+                this::showLogin,
+                () -> LastFmSettings.hasApiAccount() && !LastFmSettings.isLoggedIn()
+                        && !LastFmAccount.isBrowserLoginPending());
+
         refresh();
     }
 
@@ -745,7 +787,8 @@ final class GlassworksSettingsScreen {
         addRow(row, enabledWhen);
     }
 
-    private void inputRow(String title, String key, StringGetter getter, boolean secret) {
+    private void inputRow(String title, String key, StringGetter getter, boolean secret,
+                          BooleanGetter enabledWhen) {
         LinearLayout row = rowContainer(LinearLayout.HORIZONTAL);
         TextView[] summaryView = new TextView[1];
         row.addView(texts(title, "", summaryView),
@@ -759,14 +802,16 @@ final class GlassworksSettingsScreen {
         row.setOnClickListener(v -> showTextInput(title, getter.get(), secret, value -> {
             if (!value.equals(getter.get())) {
                 GlassworksSettings.putString(key, value.isEmpty() ? null : value);
-                // A different API account needs a new session.
-                LastFmSettings.logOut();
+                if (LastFmSettings.isUsingOwnApiKey()) {
+                    // A different API account needs a new session.
+                    LastFmSettings.logOut();
+                }
             }
             refresh();
         }));
         refreshers.add(update);
         update.run();
-        addRow(row, null);
+        addRow(row, enabledWhen);
     }
 
     private void switchRow(String title, String summary, BooleanGetter getter, BooleanSetter setter,

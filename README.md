@@ -6,7 +6,7 @@ Unofficial Morphe patches for Android apps.
 
 Glassworks patches add features to apps and change how they look and feel. For TIDAL, they
 replace the bottom navigation bar with floating, frosted-glass pills you can restyle, and
-scrobble what you play to Last.fm with your own API key. Both are set up in TIDAL's
+scrobble what you play to Last.fm. Both are set up in TIDAL's
 Settings > Glassworks.
 
 Glassworks is not affiliated with the developers of any app it patches or with the Morphe
