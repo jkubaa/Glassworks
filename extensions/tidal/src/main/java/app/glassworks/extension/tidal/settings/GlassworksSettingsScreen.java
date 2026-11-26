@@ -229,6 +229,11 @@ final class GlassworksSettingsScreen {
                 value -> GlassworksSettings.putInt(GlassworksSettings.KEY_ROUNDNESS_PERCENT, value),
                 pills);
 
+        choiceRow("Mini player size", new String[]{"Regular", "Compact"},
+                () -> GlassworksSettings.isCompactMiniPlayer() ? 1 : 0,
+                index -> GlassworksSettings.putBoolean(GlassworksSettings.KEY_COMPACT_MINI_PLAYER, index == 1),
+                pills);
+
         choiceRow("Artwork shape", new String[]{"TIDAL's", "Rounded", "Circle"},
                 GlassworksSettings::getArtworkShape,
                 index -> GlassworksSettings.putInt(GlassworksSettings.KEY_ARTWORK_SHAPE, index),

@@ -80,6 +80,31 @@ val frostedPillNavigationBarPatch = bytecodePatch(
         // Replace the mini player artwork's corner shape with the one from the settings.
         MiniPlayerRowFingerprint.let {
             val method = it.method
+
+            // Route the row's padding and the artwork and button sizes through the extension,
+            // which makes them smaller for the compact mini player. The redirects keep the
+            // instruction count, so the shape match index below stays valid.
+            method.instructions.withIndex().filter { (_, instruction) ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) {
+                    return@filter false
+                }
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                reference.definingClass == "Landroidx/compose/foundation/layout/PaddingKt;" &&
+                    reference.name == "padding-qDBjuR0"
+            }.forEach { (index, _) ->
+                method.redirectStaticCall(index, "$EXTENSION_CLASS->miniPlayerRowPadding(${MODIFIER}FFFF)$MODIFIER")
+            }
+            method.instructions.withIndex().filter { (_, instruction) ->
+                if (instruction.opcode != Opcode.INVOKE_STATIC && instruction.opcode != Opcode.INVOKE_STATIC_RANGE) {
+                    return@filter false
+                }
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                reference.definingClass == "Landroidx/compose/foundation/layout/SizeKt;" &&
+                    reference.name == "size-3ABfNKs"
+            }.forEach { (index, _) ->
+                method.redirectStaticCall(index, "$EXTENSION_CLASS->miniPlayerSize(${MODIFIER}F)$MODIFIER")
+            }
+
             val shapeResultIndex = it.instructionMatches.last().index + 1
             if (method.getInstruction(shapeResultIndex).opcode != Opcode.MOVE_RESULT_OBJECT) {
                 throw PatchException("No result for the artwork shape in the MiniPlayer composable")

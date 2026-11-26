@@ -88,7 +88,7 @@ public final class GlassPreview extends View {
         float side = (12f + GlassworksSettings.getSideMarginDp()) * density;
         float bottom = height - (10f + GlassworksSettings.getLiftDp()) * density;
         float tabHeight = 50f * density;
-        float miniHeight = 56f * density;
+        float miniHeight = (GlassworksSettings.isCompactMiniPlayer() ? 46f : 56f) * density;
         float roundness = GlassworksSettings.getRoundnessPercent() / 100f;
         boolean albumArt = GlassworksSettings.getTintColorIndex() == GlassworksSettings.TINT_ALBUM_ART;
         int tint = albumArt ? ArtworkTint.currentRgb() : GlassworksSettings.getTintRgb();

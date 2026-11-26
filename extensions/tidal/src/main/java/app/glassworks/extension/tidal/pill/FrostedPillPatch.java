@@ -33,6 +33,14 @@ public final class FrostedPillPatch {
      */
     private static final float MINI_PLAYER_CENTERING_DP = -2f;
 
+    /** Artwork and play button size of the compact mini player (TIDAL: 44 and 40), in dp. */
+    private static final float COMPACT_ITEM_DP = 36f;
+    /**
+     * Padding above and below the compact mini player row (TIDAL: 12 and 8), in dp. TIDAL's
+     * play and next buttons are 44dp tall, so the compact row is 52dp.
+     */
+    private static final float COMPACT_ROW_PADDING_DP = 4f;
+
     /** Corner radius of the one-pill card at 100% roundness, in dp (half the tab bar height). */
     private static final float CARD_MAX_RADIUS_DP = 28f;
 
@@ -69,6 +77,10 @@ public final class FrostedPillPatch {
         int side = GlassworksSettings.getSideMarginDp();
         Modifier withGap = ComposeCompat.padding(modifier, side, 0f, side, GlassworksSettings.getPillGapDp());
         Modifier pill = withGap.then(FrostedPillElement.MINI_PLAYER);
+        if (isCompactMiniPlayer()) {
+            // The compact row has even padding, so it needs no centering.
+            return remember(pill);
+        }
         return remember(ComposeCompat.offset(pill, 0f, MINI_PLAYER_CENTERING_DP));
     }
 
@@ -150,6 +162,33 @@ public final class FrostedPillPatch {
     /** Corner radius of the "Rounded" artwork shape: up to 12dp, following the pill's roundness. */
     static float getArtworkRadiusDp() {
         return 4f + 8f * GlassworksSettings.getRoundnessPercent() / 100f;
+    }
+
+    /**
+     * Replaces {@code padding(start, top, end, bottom)} of the mini player row
+     * (16, 12, 18, 8 in TIDAL 2.221.0). The compact size uses even, smaller vertical padding.
+     */
+    public static Modifier miniPlayerRowPadding(Modifier modifier, float start, float top, float end, float bottom) {
+        if (isCompactMiniPlayer()) {
+            top = COMPACT_ROW_PADDING_DP;
+            bottom = COMPACT_ROW_PADDING_DP;
+        }
+        return ComposeCompat.paddingExact(modifier, start, top, end, bottom);
+    }
+
+    /**
+     * Replaces {@code size(dp)} calls in the mini player row: the 44dp artwork and the 40dp
+     * play button get smaller for the compact size; other sizes are unchanged.
+     */
+    public static Modifier miniPlayerSize(Modifier modifier, float sizeDp) {
+        if (isCompactMiniPlayer() && sizeDp > COMPACT_ITEM_DP) {
+            sizeDp = COMPACT_ITEM_DP;
+        }
+        return ComposeCompat.size(modifier, sizeDp);
+    }
+
+    private static boolean isCompactMiniPlayer() {
+        return GlassworksSettings.isPillBarEnabled() && GlassworksSettings.isCompactMiniPlayer();
     }
 
     /** Corner radius of the one-pill card, in dp. */

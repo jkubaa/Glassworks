@@ -64,6 +64,19 @@ final class ComposeCompat {
         return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp, 0, null);
     }
 
+    /** {@code modifier.padding(start, top, end, bottom)} in dp, applied even when all are 0. */
+    static Modifier paddingExact(Modifier modifier, float startDp, float topDp, float endDp, float bottomDp) {
+        Method method = find(PADDING_KT, "padding-qDBjuR0", Modifier.class,
+                float.class, float.class, float.class, float.class);
+        return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp);
+    }
+
+    /** {@code modifier.size(sizeDp.dp)}. */
+    static Modifier size(Modifier modifier, float sizeDp) {
+        Method method = find(SIZE_KT, "size-3ABfNKs", Modifier.class, float.class);
+        return invoke(method, modifier, modifier, sizeDp);
+    }
+
     /** {@code modifier.offset(xDp.dp, yDp.dp)}: moves the content without changing the layout. */
     static Modifier offset(Modifier modifier, float xDp, float yDp) {
         Method method = find(OFFSET_KT, "offset-VpY3zN4", Modifier.class, float.class, float.class);
