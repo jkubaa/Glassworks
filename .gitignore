@@ -132,3 +132,6 @@ node_modules/
 # Ignore IDEA files
 .idea/
 local.properties
+
+# Local working files (pulled APKs, decompiled sources)
+/.local/

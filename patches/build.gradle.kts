@@ -10,17 +10,25 @@ plugins {
     alias(libs.plugins.animalsniffer)
 }
 
-group = "app.template"
+group = "app.glassworks"
+
+// Dev-only patches (src/dev) are compiled only with -Pglassworks.dev, so they never ship in
+// the published bundle. The "Dev build" patch there lets a test build install next to the
+// TIDAL app patched by Morphe Manager.
+if (providers.gradleProperty("glassworks.dev").isPresent) {
+    kotlin.sourceSets.named("main") {
+        kotlin.srcDir("src/dev/kotlin")
+    }
+}
 
 patches {
-    // TODO: Update this section with your project details.
     about {
-        name = "UserXYZ Patches"
-        description = "Patches for apps I like"
-        source = "git@github.com:UserXYZ/morphe-patches.git"
-        author = "Awesome dev"
-        contact = "na"
-        website = "na"
+        name = "Glassworks Patches"
+        description = "Unofficial Morphe patches that add features to Android apps and change how they look"
+        source = "git@github.com:jkubaa/Glassworks.git"
+        author = "jkubaa"
+        contact = "https://github.com/jkubaa/Glassworks/issues"
+        website = "https://github.com/jkubaa/Glassworks"
         license = "GPLv3"
     }
 }

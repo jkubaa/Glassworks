@@ -1,0 +1,214 @@
+package app.glassworks.extension.tidal.pill;
+
+import android.util.Log;
+
+import androidx.compose.ui.Modifier;
+import androidx.compose.ui.graphics.Brush;
+import androidx.compose.ui.graphics.Shape;
+
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Calls Compose functions that Java source cannot reference directly: names mangled with '-'
+ * (Kotlin inline classes) and synthetic {@code $default} methods (Kotlin default arguments).
+ * Methods are looked up once and cached. If a lookup fails, the modifier is returned unchanged
+ * instead of crashing the app.
+ */
+final class ComposeCompat {
+
+    private static final String TAG = "Glassworks";
+
+    private static final String BACKGROUND_KT = "androidx.compose.foundation.BackgroundKt";
+    private static final String PADDING_KT = "androidx.compose.foundation.layout.PaddingKt";
+    private static final String MARQUEE_KT = "androidx.compose.foundation.BasicMarqueeKt";
+    private static final String MARQUEE_SPACING = "androidx.compose.foundation.MarqueeSpacing";
+    private static final String PROGRESS_KT = "androidx.compose.material3.ProgressIndicatorKt";
+    private static final String COMPOSER = "androidx.compose.runtime.Composer";
+    private static final String OFFSET_KT = "androidx.compose.foundation.layout.OffsetKt";
+    private static final String SIZE_KT = "androidx.compose.foundation.layout.SizeKt";
+    private static final String SHAPE_KT = "androidx.compose.foundation.shape.RoundedCornerShapeKt";
+
+    /** Cached lookups. A null value means the lookup failed and will not be retried. */
+    private static final Map<String, Method> METHODS = new HashMap<>();
+
+    private ComposeCompat() {
+    }
+
+    /** {@code modifier.background(color, shape)}, where color is a packed Compose Color. */
+    static Modifier background(Modifier modifier, long color, Shape shape) {
+        Method method = find(BACKGROUND_KT, "background-bw27NRU",
+                Modifier.class, long.class, Shape.class);
+        return invoke(method, modifier, modifier, color, shape);
+    }
+
+    /** {@code modifier.background(brush, shape, alpha)}, using TIDAL's original arguments. */
+    static Modifier brushBackground(Modifier modifier, Brush brush, Shape shape,
+                                    float alpha, int defaultsMask, Object unused) {
+        Method method = find(BACKGROUND_KT, "background$default",
+                Modifier.class, Brush.class, Shape.class, float.class, int.class, Object.class);
+        return invoke(method, modifier, modifier, brush, shape, alpha, defaultsMask, unused);
+    }
+
+    /** {@code modifier.padding(bottom = bottomDp.dp)}. */
+    static Modifier paddingBottom(Modifier modifier, float bottomDp) {
+        return padding(modifier, 0f, 0f, 0f, bottomDp);
+    }
+
+    /** {@code modifier.padding(start, top, end, bottom)}, all in dp. */
+    static Modifier padding(Modifier modifier, float startDp, float topDp, float endDp, float bottomDp) {
+        if (startDp <= 0f && topDp <= 0f && endDp <= 0f && bottomDp <= 0f) {
+            return modifier;
+        }
+        // padding(start, top, end, bottom) with default arguments. All four are passed,
+        // so the defaults mask is 0.
+        Method method = find(PADDING_KT, "padding-qDBjuR0$default", Modifier.class,
+                float.class, float.class, float.class, float.class, int.class, Object.class);
+        return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp, 0, null);
+    }
+
+    /** A Compose {@code Color} as its packed long, from an ARGB int (sRGB). */
+    static long color(int argb) {
+        return (argb & 0xFFFFFFFFL) << 32;
+    }
+
+    /** Compose's {@code CircleShape}, or null if it cannot be found. */
+    static Shape circleShape() {
+        Method method = find(SHAPE_KT, "getCircleShape");
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (Shape) method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: getCircleShape", e);
+            return null;
+        }
+    }
+
+    /**
+     * Material 3's {@code CircularProgressIndicator(modifier, color, strokeWidth, trackColor,
+     * strokeCap)}, a composable: {@code composer}, {@code changed} and {@code defaults} are passed
+     * through from the original call.
+     */
+    static void circularProgressIndicator(Modifier modifier, long color, float strokeWidth, long trackColor,
+                                          int strokeCap, Object composer, int changed, int defaults) {
+        Method method;
+        try {
+            method = find(PROGRESS_KT, "CircularProgressIndicator-LxG7B9w", Modifier.class, long.class,
+                    float.class, long.class, int.class, Class.forName(COMPOSER), int.class, int.class);
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "Composer class not found", e);
+            return;
+        }
+        if (method == null) {
+            return;
+        }
+        try {
+            method.invoke(null, modifier, color, strokeWidth, trackColor, strokeCap, composer, changed, defaults);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: CircularProgressIndicator", e);
+        }
+    }
+
+    /**
+     * {@code modifier.basicMarquee(...)} with TIDAL's original arguments (the synthetic
+     * {@code $default} method), or the modifier unchanged if the call fails.
+     */
+    static Modifier basicMarquee(Modifier modifier, int iterations, int animationMode, int repeatDelay,
+                                 int initialDelay, Object spacing, float velocity, int defaults, Object unused) {
+        Method method;
+        try {
+            method = find(MARQUEE_KT, "basicMarquee-1Mj1MLw$default", Modifier.class, int.class, int.class,
+                    int.class, int.class, Class.forName(MARQUEE_SPACING), float.class, int.class, Object.class);
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "MarqueeSpacing class not found", e);
+            return modifier;
+        }
+        return invoke(method, modifier, modifier, iterations, animationMode, repeatDelay, initialDelay,
+                spacing, velocity, defaults, unused);
+    }
+
+    /** {@code modifier.padding(start, top, end, bottom)} in dp, applied even when all are 0. */
+    static Modifier paddingExact(Modifier modifier, float startDp, float topDp, float endDp, float bottomDp) {
+        Method method = find(PADDING_KT, "padding-qDBjuR0", Modifier.class,
+                float.class, float.class, float.class, float.class);
+        return invoke(method, modifier, modifier, startDp, topDp, endDp, bottomDp);
+    }
+
+    /** {@code modifier.size(sizeDp.dp)}. */
+    static Modifier size(Modifier modifier, float sizeDp) {
+        Method method = find(SIZE_KT, "size-3ABfNKs", Modifier.class, float.class);
+        return invoke(method, modifier, modifier, sizeDp);
+    }
+
+    /** {@code modifier.offset(xDp.dp, yDp.dp)}: moves the content without changing the layout. */
+    static Modifier offset(Modifier modifier, float xDp, float yDp) {
+        Method method = find(OFFSET_KT, "offset-VpY3zN4", Modifier.class, float.class, float.class);
+        return invoke(method, modifier, modifier, xDp, yDp);
+    }
+
+    /** {@code modifier.width(widthDp.dp)}. */
+    static Modifier width(Modifier modifier, float widthDp) {
+        Method method = find(SIZE_KT, "width-3ABfNKs", Modifier.class, float.class);
+        return invoke(method, modifier, modifier, widthDp);
+    }
+
+    /** {@code RoundedCornerShape(percent)} (50 is a circle), or null if it cannot be created. */
+    static Shape roundedCornerShapePercent(int percent) {
+        Method method = find(SHAPE_KT, "RoundedCornerShape", int.class);
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (Shape) method.invoke(null, percent);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: RoundedCornerShape(int)", e);
+            return null;
+        }
+    }
+
+    /** {@code RoundedCornerShape(radiusDp.dp)}, or null if it cannot be created. */
+    static Shape roundedCornerShape(float radiusDp) {
+        String key = SHAPE_KT + ".RoundedCornerShape-0680j_4";
+        Method method = find(SHAPE_KT, "RoundedCornerShape-0680j_4", float.class);
+        if (method == null) {
+            return null;
+        }
+        try {
+            return (Shape) method.invoke(null, radiusDp);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: " + key, e);
+            return null;
+        }
+    }
+
+    private static synchronized Method find(String className, String name, Class<?>... parameters) {
+        String key = className + '.' + name;
+        if (METHODS.containsKey(key)) {
+            return METHODS.get(key);
+        }
+
+        Method method = null;
+        try {
+            method = Class.forName(className).getMethod(name, parameters);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method not found: " + key, e);
+        }
+        METHODS.put(key, method);
+        return method;
+    }
+
+    private static Modifier invoke(Method method, Modifier fallback, Object... arguments) {
+        if (method == null) {
+            return fallback;
+        }
+        try {
+            return (Modifier) method.invoke(null, arguments);
+        } catch (ReflectiveOperationException e) {
+            Log.e(TAG, "Compose method failed: " + method.getName(), e);
+            return fallback;
+        }
+    }
+}

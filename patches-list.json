@@ -1,5 +1,60 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "0.0.0",
-  "patches": []
+  "version": "1.0.0-dev.5",
+  "patches": [
+    {
+      "name": "Last.fm scrobbling",
+      "description": "Scrobbles the tracks you play to Last.fm and shows what is playing on your profile. Log in with your Last.fm account in Settings > Glassworks > Last.fm.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.aspiro.tidal",
+          "name": "TIDAL",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#000000",
+          "signatures": null,
+          "formFactor": "MOBILE",
+          "targets": [
+            {
+              "version": "2.221.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Pill navigation bar",
+      "description": "Replaces the bottom bar with floating glass pills for the mini player and the tabs, with the screen content blurred behind them. Style them in Settings > Glassworks: frosted or liquid glass, one or two pills, their shape, size and tint (including one from the album art), a compact mini player, and hidden, reordered or separate tabs.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.aspiro.tidal",
+          "name": "TIDAL",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#000000",
+          "signatures": null,
+          "formFactor": "MOBILE",
+          "targets": [
+            {
+              "version": "2.221.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    }
+  ]
 }
