@@ -1,3 +1,13 @@
+## [1.0.0-dev.5](https://github.com/jkubaa/Glassworks/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2026-11-26)
+
+### ✨ New Features
+
+* **Last.fm scrobbling:** Built-in API key and browser login ([4d73e84](https://github.com/jkubaa/Glassworks/commit/4d73e8455e52068082443140a821bd31ce0ca0a5))
+
+### 🐛 Bug Fixes
+
+* **Last.fm scrobbling:** Follow Last.fm's scrobbling rules ([b5be604](https://github.com/jkubaa/Glassworks/commit/b5be604cdf9df80788c87ccb55f39741837ff57e))
+
 ## [1.0.0-dev.4](https://github.com/jkubaa/Glassworks/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2026-11-26)
 
 ### ✨ New Features
