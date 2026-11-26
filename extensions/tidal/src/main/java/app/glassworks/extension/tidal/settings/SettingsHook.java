@@ -2,7 +2,6 @@ package app.glassworks.extension.tidal.settings;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -16,7 +15,7 @@ import java.lang.reflect.Proxy;
 import java.util.List;
 
 /**
- * Adds a "Glassworks" row to TIDAL's main settings page, right below "Appearance".
+ * Adds a "Glassworks" row at the top of TIDAL's main settings page.
  * <p>
  * TIDAL's settings rows implement {@code com.aspiro.wamp.settings.a} (not obfuscated) and return
  * a view state whose class and click-callback interface are obfuscated and change between
@@ -60,7 +59,7 @@ public final class SettingsHook {
     /**
      * Injected before every {@code return} of TIDAL's main settings list provider.
      *
-     * @return The same list with the Glassworks row inserted below "Appearance",
+     * @return The same list with the Glassworks row inserted first,
      * or unchanged if anything goes wrong.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -73,12 +72,9 @@ public final class SettingsHook {
             Class<?> itemInterface = Class.forName(SETTINGS_ITEM_INTERFACE);
             Method viewStateGetter = itemInterface.getMethod("a");
 
-            String appearanceTitle = getAppearanceTitle();
-            int insertAt = items.size();
             Constructor<?> viewStateConstructor = null;
 
-            for (int i = 0; i < items.size(); i++) {
-                Object item = items.get(i);
+            for (Object item : items) {
                 if (!itemInterface.isInstance(item)) {
                     continue;
                 }
@@ -88,18 +84,9 @@ public final class SettingsHook {
                     continue;
                 }
 
-                Constructor<?> constructor = findNavigationRowConstructor(viewState.getClass());
-                if (constructor == null) {
-                    continue;
-                }
-
-                if (viewStateConstructor == null) {
-                    viewStateConstructor = constructor;
-                }
-                if (appearanceTitle != null
-                        && viewState.toString().startsWith("ViewState(title=" + appearanceTitle + ",")) {
-                    viewStateConstructor = constructor;
-                    insertAt = i + 1;
+                viewStateConstructor = findNavigationRowConstructor(viewState.getClass());
+                if (viewStateConstructor != null) {
+                    break;
                 }
             }
 
@@ -108,7 +95,7 @@ public final class SettingsHook {
                 return items;
             }
 
-            items.add(insertAt, getOrCreateItem(itemInterface, viewStateConstructor));
+            items.add(0, getOrCreateItem(itemInterface, viewStateConstructor));
         } catch (Throwable t) {
             Log.e(TAG, "Failed to add the Glassworks settings row", t);
         }
@@ -170,17 +157,6 @@ public final class SettingsHook {
                 });
         cachedViewStateClass = viewStateClass;
         return cachedItem;
-    }
-
-    private static String getAppearanceTitle() {
-        Activity activity = currentActivity.get();
-        if (activity == null) {
-            return null;
-        }
-        Context context = activity.getApplicationContext();
-        int id = context.getResources().getIdentifier("settings_appearance_title", "string",
-                context.getPackageName());
-        return id == 0 ? null : context.getString(id);
     }
 
     private static void openSettingsScreen() {
